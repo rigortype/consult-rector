@@ -69,8 +69,8 @@ consult-rector doc section <file> <N>            # Extract section by number
 - **Target files**: single file, directory, or glob
 - **Output format**: human-friendly by default; `--json` flag for machine-readable output (AI consumption)
 - **Diff style control**: `--diff-style=unified` (default, string) or `--diff-style=array` (structured array). Different keys per style (`diff_unified` vs `diff_array`) to keep types clean (never same key with variant types)
-- **dry-run JSON schema**: file-grouped changes, each with per-file diff (unified or array) + change metadata
-- **apply JSON schema**: lightweight — `files_changed`, `files_errored`, `errors[]` only (detailed diff via `git diff`)
+- **dry-run JSON schema**: `{mode, totals:{changed_files, errors}, files:[{file, applied_rules, diff_unified|diff_array}], errors}`. `diff_array` is a list of hunks `{from_start, from_count, to_start, to_count, lines:[{type:context|add|remove, text}]}`
+- **apply JSON schema**: lightweight — `{mode, files_changed, files_errored, errors}` only (detailed diff via `git diff`)
 - **Config merging**: with `--with-config=rector.php`, consult-rector asks user permission before merging project settings with temporary config
 
 ## AST DSL

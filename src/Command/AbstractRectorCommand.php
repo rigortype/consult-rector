@@ -8,12 +8,11 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Shared option surface for the rule-driven transformation commands
- * (`dry-run` and `apply`), which differ only in whether they rewrite files.
+ * Shared option surface and input resolution for the rule-driven transformation
+ * commands (`dry-run` and `apply`), which differ only in whether they rewrite
+ * files.
  */
 abstract class AbstractRectorCommand extends Command
 {
@@ -30,15 +29,48 @@ abstract class AbstractRectorCommand extends Command
             ->addOption('max-remediation-iterations', null, InputOption::VALUE_REQUIRED, 'Phase 2 remediation iteration cap; 0 disables remediation', '3');
     }
 
-    /**
-     * Skeleton stub: the command surface is wired, the pipeline is not yet built.
-     * Diagnostics go to STDERR so `--json` consumers never see them on STDOUT.
-     */
-    protected function notImplemented(InputInterface $input, OutputInterface $output): int
+    protected function resolvePath(InputInterface $input): string
     {
-        (new SymfonyStyle($input, $output))->getErrorStyle()
-            ->warning(sprintf('`%s` is scaffolded but not yet implemented.', (string) $this->getName()));
+        $path = $input->getArgument('path');
 
-        return Command::FAILURE;
+        return is_string($path) ? $path : '';
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected function resolveRules(InputInterface $input): array
+    {
+        $rules = $input->getOption('rules');
+        if (! is_array($rules)) {
+            return [];
+        }
+
+        $list = [];
+        foreach ($rules as $rule) {
+            if (is_string($rule) && $rule !== '') {
+                $list[] = $rule;
+            }
+        }
+
+        return $list;
+    }
+
+    protected function resolveDiffStyle(InputInterface $input): string
+    {
+        return $input->getOption('diff-style') === 'array' ? 'array' : 'unified';
+    }
+
+    protected function wantsJson(InputInterface $input): bool
+    {
+        return $input->getOption('json') === true;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    protected function jsonEncode(array $data): string
+    {
+        return json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
     }
 }
