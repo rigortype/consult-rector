@@ -60,7 +60,7 @@ Human (user) ←→ AI Agent ←→ consult-rector skill ←→ consult-rector C
 consult-rector search <keyword>                 # Rule search
 consult-rector dry-run <file|dir> --rules=FQCN [...]  # Dry-run (--json for structured output)
 consult-rector apply <file|dir> --rules=FQCN [...]    # Apply rewrite
-consult-rector ast <file|dir> '<dsl-json>'      # Custom AST DSL transformation
+consult-rector ast <file|dir> '<dsl-json>' [--apply]  # Custom AST DSL transformation (dry-run by default)
 consult-rector doc index <file>                  # md2idx-style section index
 consult-rector doc section <file> <N>            # Extract section by number
 ```
@@ -88,9 +88,9 @@ Custom PHP-Parser transformations expressed as an S-expression in JSON array for
 
 - **Implementation**: JSON array S-expressions (no custom parser needed)
 - **Precondition guard**: type-change transforms require the current type (`from`); the transform fires only when the existing type matches, preventing accidental rewrites
-- **Internal architecture**: DSL Interpreter → Transform Resolver (plugin-based) → Rule Generator (Visitor → temporary Rector rule) → Rector Runner → Result Formatter
+- **Internal architecture**: DSL Interpreter → Transform Resolver (plugin-based) → DSL Config Assembler (`ruleWithConfiguration` of shipped rules) → Rector Runner → Result Formatter
 - **Composite transforms**: `["chain", [...], [...]]` for multi-step transformations. Sub-transforms run **sequentially in a temporary sandbox copy** (each step sees the previous step's output); the user is shown one **consolidated** original→final diff, not N partial diffs. `apply` commits the sandbox only on full success, so a chain is **atomic** (all-or-nothing). `chain` is a composition primitive, not a catalog leaf
-- **Built-in transform catalog**: per-type knowledge of how to generate PHP-Parser Visitors. Plugin-like extension via traits/utilities for declarative-style visitors
+- **Built-in transform catalog**: each transform is a shipped `ConfigurableRectorInterface` rule plus a small compiler that maps the S-expression to its configuration
 - **Transform naming**: kebab-case (`replace-param-type`, `add-import`, `add-trait-use`)
 - **Catalog scope**: DSL covers pinpoint transformations that no existing Rector rule handles. If a Rector rule exists for a transformation, skill/search should find it instead
 - **Phase 1 transforms** (initial release):

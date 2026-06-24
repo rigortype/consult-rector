@@ -57,7 +57,7 @@ consult-rector dry-run <file> --rules=FQCN [...--rules=FQCN2]
 # Apply changes
 consult-rector apply <file> --rules=FQCN
 
-# Custom AST transformation
+# Custom AST transformation (dry-run by default; add --apply to rewrite)
 consult-rector ast <file> '<dsl-json>'
 
 # Read sections from reference docs

@@ -40,7 +40,7 @@ Multiple transformations are composed with the `chain` transform:
   ["add-import", ["class", "App\\Enum\\OrderStatus"]]]
 ```
 
-Each sub-transform is compiled into a separate temporary Rector rule file. They are **not** run independently against the original code — that would make a dependent chain incoherent: a later step would not see an earlier step's output, and two steps touching the same lines would produce non-composable diffs.
+Each sub-transform compiles to its own temporary rector.php (registering the shipped rules with their configuration). They are **not** run independently against the original code — that would make a dependent chain incoherent: a later step would not see an earlier step's output, and two steps touching the same lines would produce non-composable diffs.
 
 #### Sandbox-sequential execution
 
@@ -53,7 +53,7 @@ A chain runs the same way for both dry-run and apply:
 - **dry-run** stops there: it returns the consolidated diff and discards the sandbox. The user sees a single original→final diff per file (the same dry-run JSON schema as a single transform), never N partial diffs.
 - **apply** commits the sandbox back to the real files **only after the whole chain succeeds**.
 
-A single (non-chain) transform needs no sandbox — it compiles to one temporary Rector rule and uses Rector's native dry-run/apply directly. The sandbox exists specifically to make *dependent* chains coherent.
+A single (non-chain) transform needs no sandbox — it compiles to one temporary rector.php and uses Rector's native dry-run/apply directly. The sandbox exists specifically to make *dependent* chains coherent.
 
 #### Atomicity
 
@@ -69,16 +69,21 @@ Because real files are written only on full success, a chain is **all-or-nothing
 
 ### Internal architecture
 
+Each Phase 1 transform is a **shipped, configurable Rector rule**
+(`ConfigurableRectorInterface` under `src/Rector/Rule/`). The DSL does not
+generate rule source — it compiles the S-expression into that rule's
+*configuration*, which keeps the transform logic in real, testable classes.
+
 ```
 AST DSL JSON
     ↕ JSON decode
-DSL Interpreter — validates structure, resolves transform type
+DSL Interpreter — validates structure, resolves each transform
     ↕
-Transform Resolver — maps transform name → PHP-Parser Visitor generator
+Transform Resolver — maps transform name → a shipped rule + one config entry
     ↕ (plugin-based catalog)
-Rule Generator — wraps Visitor as a temporary Rector rule
+DSL Config Assembler — temporary rector.php registering each rule via ruleWithConfiguration(Rule::class, [spec])
     ↕
-Rector Runner — executes the rule (same as dry-run/apply pipeline)
+Rector Runner — executes the config (same subprocess as dry-run/apply)
     ↕
 Result Formatter — produces diff + change metadata
 ```
@@ -97,7 +102,7 @@ Result Formatter — produces diff + change metadata
 
 ### Extension mechanism
 
-Transform types are plugin-like: each has a class that knows how to generate a PHP-Parser Visitor. A trait/utility layer reduces boilerplate for common visitor patterns. The catalog can be extended without modifying the interpreter.
+Transform types are plugin-like: each pairs a shipped `ConfigurableRectorInterface` rule with a small `Transform` class that compiles the S-expression into that rule's configuration. The catalog can be extended without modifying the interpreter.
 
 ### Boundary with Rector rules
 
@@ -124,5 +129,5 @@ The AI writes PHP code that implements a PHP-Parser NodeVisitor.
 
 - JSON array S-expressions are trivially parseable (no parser dependency, just `json_decode`).
 - The plugin catalog keeps the core interpreter stable while transforms grow independently.
-- Each new transform type requires a new class in the catalog — but the trait/utility layer reduces per-transform cost.
+- Each new transform type adds a shipped rule plus a small Transform compiler class — but both are ordinary, unit-testable PHP, no generated rule source.
 - Rector boundary means some user requests will fall through to "search for a Rector rule" instead of using DSL — this is by design.
