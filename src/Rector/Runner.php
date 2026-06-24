@@ -30,7 +30,7 @@ final class Runner
      */
     public function dryRun(array $paths, array $rules): RunResult
     {
-        return $this->run($paths, $rules, true);
+        return $this->runConfig($this->assembler->assemble($paths, $rules), true);
     }
 
     /**
@@ -39,16 +39,16 @@ final class Runner
      */
     public function apply(array $paths, array $rules): RunResult
     {
-        return $this->run($paths, $rules, false);
+        return $this->runConfig($this->assembler->assemble($paths, $rules), false);
     }
 
     /**
-     * @param list<string> $paths
-     * @param list<string> $rules
+     * Run an already-assembled rector.php (e.g. the AST DSL config). dry-run adds
+     * `--dry-run`; the JSON shape is identical.
      */
-    private function run(array $paths, array $rules, bool $dryRun): RunResult
+    public function runConfig(string $config, bool $dryRun): RunResult
     {
-        $configFile = $this->writeTempConfig($this->assembler->assemble($paths, $rules));
+        $configFile = $this->writeTempConfig($config);
 
         try {
             $args = ['process', '--config=' . $configFile, '--output-format=json', '--no-progress-bar'];
