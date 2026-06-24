@@ -5,11 +5,6 @@ declare(strict_types=1);
 namespace TypedDuck\ConsultRector\Rector\Rule;
 
 use PhpParser\Node;
-use PhpParser\Node\ComplexType;
-use PhpParser\Node\Identifier;
-use PhpParser\Node\Name;
-use PhpParser\Node\Name\FullyQualified;
-use PhpParser\Node\NullableType;
 use PhpParser\Node\Stmt\Class_;
 use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Rector\AbstractRector;
@@ -23,11 +18,6 @@ use Symplify\RuleDocGenerator\ValueObject\RuleDefinition;
  */
 final class ReplaceParamTypeRector extends AbstractRector implements ConfigurableRectorInterface
 {
-    private const SCALAR_TYPES = [
-        'string', 'int', 'float', 'bool', 'array', 'iterable', 'object',
-        'mixed', 'void', 'never', 'null', 'false', 'true', 'self', 'static', 'parent', 'callable',
-    ];
-
     /**
      * @var list<array{class: string, method: string, param: int, from: string, to: string}>
      */
@@ -94,7 +84,7 @@ final class ReplaceParamTypeRector extends AbstractRector implements Configurabl
                     continue; // `from` guard: leave an unexpected current type untouched
                 }
 
-                $param->type = $this->buildType($spec['to']);
+                $param->type = TypeNodeFactory::create($spec['to']);
                 $changed = true;
             }
         }
@@ -120,17 +110,5 @@ final class ReplaceParamTypeRector extends AbstractRector implements Configurabl
                 ),
             ],
         );
-    }
-
-    private function buildType(string $type): Identifier|Name|ComplexType
-    {
-        $nullable = str_starts_with($type, '?');
-        $bare = $nullable ? substr($type, 1) : $type;
-
-        $typeNode = in_array(strtolower($bare), self::SCALAR_TYPES, true)
-            ? new Identifier($bare)
-            : new FullyQualified(ltrim($bare, '\\'));
-
-        return $nullable ? new NullableType($typeNode) : $typeNode;
     }
 }
