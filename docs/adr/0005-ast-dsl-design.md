@@ -28,6 +28,8 @@ Transformations are expressed as nested JSON arrays, where the first element is 
   ["to", "App\\Enum\\OrderStatus"]]
 ```
 
+For type-change transforms (`replace-type`, `replace-param-type`, `replace-return-type`), the current type (`from`) is **required**. It acts as a precondition guard: the generated Rector rule fires only when the existing type matches `from`, so an unexpected current type is left untouched rather than silently rewritten.
+
 ### Composition via chain
 
 Multiple transformations are composed with the `chain` transform:

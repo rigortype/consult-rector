@@ -35,8 +35,8 @@ Rector / PHP-Parser
 | MCP Tool | Maps to CLI | Description |
 |----------|-------------|-------------|
 | `rector_search` | `consult-rector search <keyword>` | Search Rector rules by keyword |
-| `rector_dry_run` | `consult-rector dry-run <file> <rule> --json` | Propose changes, return structured diff |
-| `rector_apply` | `consult-rector apply <file> <rule> --json` | Apply changes, return result |
+| `rector_dry_run` | `consult-rector dry-run <file> --rules=<FQCN> --json` | Propose changes, return structured diff |
+| `rector_apply` | `consult-rector apply <file> --rules=<FQCN> --json` | Apply changes, return result |
 | `rector_ast` | `consult-rector ast <file> '<dsl>' --json` | Custom AST transformation |
 | `rector_doc_index` | `consult-rector doc index <ref-file>` | Get section index of reference doc |
 | `rector_doc_section` | `consult-rector doc section <ref-file> <N>` | Get section content |

@@ -81,6 +81,8 @@ Transformations are expressed as JSON array S-expressions. No custom parser need
   ["to", "App\\Enum\\OrderStatus"]]
 ```
 
+`from` (the current type) is **required** on type-change transforms — it acts as a precondition guard, so the transform fires only when the existing type matches.
+
 Chain multiple transformations:
 
 ```json

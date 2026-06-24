@@ -58,8 +58,8 @@ Human (user) ←→ AI Agent ←→ consult-rector skill ←→ consult-rector C
 
 ```
 consult-rector search <keyword>                 # Rule search
-consult-rector dry-run <file|dir> <rule> [...]  # Dry-run (--json for structured output)
-consult-rector apply <file|dir> <rule> [...]    # Apply rewrite
+consult-rector dry-run <file|dir> --rules=FQCN [...]  # Dry-run (--json for structured output)
+consult-rector apply <file|dir> --rules=FQCN [...]    # Apply rewrite
 consult-rector ast <file|dir> '<dsl-json>'      # Custom AST DSL transformation
 consult-rector doc index <file>                  # md2idx-style section index
 consult-rector doc section <file> <N>            # Extract section by number
@@ -78,14 +78,16 @@ consult-rector doc section <file> <N>            # Extract section by number
 Custom PHP-Parser transformations expressed as an S-expression in JSON array form:
 
 ```json
-["replace-argument-type",
+["replace-param-type",
   ["class", "App\\Service\\OrderService"],
   ["method", "setStatus"],
-  ["argument-index", 0],
-  ["to-type", "App\\Enum\\OrderStatus"]]
+  ["param", 0],
+  ["from", "string"],
+  ["to", "App\\Enum\\OrderStatus"]]
 ```
 
 - **Implementation**: JSON array S-expressions (no custom parser needed)
+- **Precondition guard**: type-change transforms require the current type (`from`); the transform fires only when the existing type matches, preventing accidental rewrites
 - **Internal architecture**: DSL Interpreter → Transform Resolver (plugin-based) → Rule Generator (Visitor → temporary Rector rule) → Rector Runner → Result Formatter
 - **Composite transforms**: `["chain", [...], [...]]` for multi-step transformations; each sub-transform compiled into a separate Rector file and executed sequentially
 - **Built-in transform catalog**: per-type knowledge of how to generate PHP-Parser Visitors. Plugin-like extension via traits/utilities for declarative-style visitors
@@ -103,13 +105,13 @@ Custom PHP-Parser transformations expressed as an S-expression in JSON array for
 - **Detailed catalog to be refined during implementation**
 - **Output**: same schema as dry-run/apply
 
-## Refactoring workflow (2-phase strategy)
+## Refactoring workflow (two-phase strategy + verification)
 
 **Phase 1 — Declarative**: Apply the main transformation (Rector rule or AST DSL)
-**Phase 2 — Remediation**: Run PHPStan → detect remaining type errors → apply targeted fixes
+**Phase 2 — Remediation**: Run PHPStan → detect remaining type errors → apply targeted fixes (bounded loop, see below)
 **Phase 3 — Verify**: Re-run PHPStan to confirm zero errors
 
-- **PHPStan execution**: built into the CLI (not a separate skill step)
+- **PHPStan execution**: the CLI runs PHPStan and returns the structured error *delta*; the remediation **loop is skill-orchestrated** (the CLI cannot generate fixes, only execute them). The CLI enforces a hard iteration ceiling as a safety net
 - **PHPStan detection priority** (first match wins):
   1. Explicitly configured (`--phpstan-binary` option or config file)
   2. Installed alongside consult-rector (`vendor/bin/phpstan` in the same composer.json) — **excludes** the version vendored inside `vendor/rector/rector/vendor/`
@@ -118,6 +120,7 @@ Custom PHP-Parser transformations expressed as an S-expression in JSON array for
   5. `phpstan` on PATH
   6. Not found → remediation phase skipped (warning emitted)
 - **Remediation scope**: type errors only. Unused imports, code style → deferred to project's own rector.php config or ECS/php-cs-fixer
+- **Remediation loop control**: targets only *new* errors (delta vs a pre-transform baseline; pre-existing project errors untouched). Stop conditions — **converged** (delta = 0) / **exhausted** (`--max-remediation-iterations`, default 3; `0` disables) / **stalled** (an iteration fails to strictly reduce the remaining count). On non-convergence, applied changes are kept and remaining errors reported — recovery via VCS, no auto-rollback. Cross-file breakage in callers is out of scope
 - **Config merging**: user-permission-gated before merging project's rector.php with temporary config
 
 ## Testing strategy

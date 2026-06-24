@@ -19,7 +19,7 @@ Support **both** interfaces:
 | Interface | When it fires | Initiation path |
 |-----------|---------------|-----------------|
 | **Slash command** (`/consult-rector`) | AI agent's internal skill selection matches the user's refactoring intent | `skill → CLI` |
-| **MCP tool** (e.g., `consult-rector-run`) | AI agent explicitly calls the tool for a specific operation | `MCP → CLI` |
+| **MCP tool** (e.g., `rector_dry_run`) | AI agent explicitly calls the tool for a specific operation | `MCP → CLI` |
 
 ### How they share the CLI
 
@@ -36,7 +36,7 @@ MCP invocation:
 ## Rationale
 
 - **Slash commands** are how skills naturally fire in OpenCode. Keeping this path preserves the standard skill discovery flow.
-- **MCP tools** become valuable when consult-rector is composed with other agents or IDEs that speak MCP. They also allow fine-grained tool definitions per operation (e.g. separate tools for `search-rules`, `dry-run`, `apply`).
+- **MCP tools** become valuable when consult-rector is composed with other agents or IDEs that speak MCP. They also allow fine-grained tool definitions per operation (e.g. separate tools for `rector_search`, `rector_dry_run`, `rector_apply` — see ADR-0003 for the canonical tool set).
 - Both share the same CLI backend — no duplication of transformation logic.
 
 ## Considered Options

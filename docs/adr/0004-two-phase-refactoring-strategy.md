@@ -18,9 +18,25 @@ Adopt a **two-phase refactoring strategy** (three if counting verification):
 
 **Phase 1 — Declarative**: Apply the main transformation (Rector rule or AST DSL). Standard dry-run → approve → apply workflow.
 
-**Phase 2 — Remediation**: Run PHPStan against the changed files. Detect remaining type errors. Apply targeted fixes using AST DSL for each error. Loop until clean.
+**Phase 2 — Remediation**: Run PHPStan against the changed files. Detect remaining type errors. Apply targeted fixes using AST DSL for each error. Loop under bounded control (see *Remediation loop control* below).
 
 **Phase 3 — Verify**: Re-run PHPStan to confirm zero new errors on the changed files.
+
+### Remediation loop control
+
+**Loop ownership.** The CLI cannot generate fixes — mapping a PHPStan error to an AST DSL transform requires AI judgment — so the **skill orchestrates the loop** while the CLI provides primitives: run PHPStan, return the structured error delta, apply the AST DSL fix the skill produced. The CLI also enforces a hard iteration ceiling as a safety net for non-AI callers.
+
+**Scope — new errors only (delta against a baseline).** Before Phase 1 apply, the CLI captures a PHPStan baseline over the target file set. After apply, remediation targets only the *delta*: errors present after the transform that were absent in the baseline. Pre-existing project errors are never touched. Error identity is matched on `(file, PHPStan identifier, normalized message)`, independent of line number so it survives line shifts. Errors the transform surfaces in *other* files (e.g. callers of a changed signature) are out of scope — the changed-file boundary is intentional; cross-file breakage is left to the project's own CI.
+
+**Stop conditions** (first to trigger wins):
+
+1. **Converged** — the new-error delta reaches zero. Success; proceed to Phase 3.
+2. **Exhausted** — iteration count reaches `--max-remediation-iterations` (default **3**; `0` disables remediation entirely). Stop with errors remaining.
+3. **Stalled** — an iteration fails to *strictly* reduce the remaining new-error count. Catches oscillation and unfixable errors: an error the skill cannot map to a catalog transform never lowers the count, so the loop terminates naturally instead of spinning.
+
+**On non-convergence (Exhausted / Stalled).** Applied changes are **kept** — Phase 1 was human-approved and partial remediation only improves the result. Remaining errors are reported to the AI/human; there is no automatic rollback. Recovery, if wanted, is via the user's VCS (`git restore`), consistent with the apply schema's reliance on `git diff`.
+
+**PHPStan absent.** If no PHPStan binary is found (detection item 6 below), Phase 2 is skipped at zero iterations with a warning — remediation is best-effort, never a hard dependency.
 
 ### PHPStan detection priority
 
@@ -58,6 +74,6 @@ Run nothing after apply.
 ## Consequences
 
 - consult-rector must include PHPStan execution capability, adding a dependency concern (or detection logic).
-- Remediation loop may converge slowly if PHPStan reports many errors on the first pass.
+- The remediation loop is bounded (iteration cap + no-progress stop), so worst-case latency is capped — but some transforms will finish with residual errors the user must resolve manually, and cross-file breakage in callers is out of scope by design.
 - The `--with-config` merge requires careful config-aware config assembly logic.
 - PHPStan found via the target project may have a different config/level than what consult-rector expects.
