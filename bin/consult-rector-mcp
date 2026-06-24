@@ -24,12 +24,19 @@ declare(strict_types=1);
         exit(1);
     }
 
-    // NOTE: builder/transport API tracks mcp/sdk ^0.6 (see ADR-0003); verify
-    // method names against the installed SDK version before first release.
-    $server = \Mcp\Server::builder()
-        ->setServerInfo('consult-rector', \TypedDuck\ConsultRector\Console\Application::VERSION)
-        ->addTool(\TypedDuck\ConsultRector\Mcp\RectorTools::class)
-        ->build();
+    $builder = \Mcp\Server::builder()
+        ->setServerInfo('consult-rector', \TypedDuck\ConsultRector\Console\Application::VERSION);
 
-    $server->run(new \Mcp\Server\Transport\StdioTransport());
+    // Register one tool per RectorTools handler method. The mcp/sdk manual
+    // registration path reads the name/description from here, not from attributes.
+    foreach (\TypedDuck\ConsultRector\Mcp\RectorTools::definitions() as $method => $definition) {
+        $builder->addTool(
+            [\TypedDuck\ConsultRector\Mcp\RectorTools::class, $method],
+            $definition['name'],
+            null,
+            $definition['description'],
+        );
+    }
+
+    $builder->build()->run(new \Mcp\Server\Transport\StdioTransport());
 })();

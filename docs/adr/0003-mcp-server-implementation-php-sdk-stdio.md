@@ -44,29 +44,32 @@ Rector / PHP-Parser
 ### Implementation pattern (PHP SDK)
 
 ```php
-use Mcp\Capability\Attribute\McpTool;
-
 class RectorTools {
-    #[McpTool(name: 'rector_search', description: 'Search Rector rules by keyword')]
-    public function search(string $keyword): array {
-        $output = shell_exec("vendor/bin/consult-rector search " . escapeshellarg($keyword) . " --json 2>/dev/null");
-        return json_decode($output, true);
+    /** @return array<string, array{name: string, description: string}> */
+    public static function definitions(): array {
+        return [
+            'search' => ['name' => 'rector_search', 'description' => 'Search Rector rules by keyword'],
+            'dryRun' => ['name' => 'rector_dry_run', 'description' => 'Propose Rector changes without rewriting'],
+            // ... one entry per handler method
+        ];
     }
 
-    #[McpTool(name: 'rector_dry_run', description: 'Propose Rector changes without rewriting')]
-    public function dryRun(string $path, string $rule): array {
-        $output = shell_exec("vendor/bin/consult-rector dry-run " . escapeshellarg($path) . " --rules=" . escapeshellarg($rule) . " --json 2>/dev/null");
+    public function search(string $keyword): array {
+        $output = shell_exec(escapeshellarg(PHP_BINARY) . " bin/consult-rector search " . escapeshellarg($keyword) . " --json 2>/dev/null");
         return json_decode($output, true);
     }
+    // dryRun(), apply(), ast(), docIndex(), docSection() ...
 }
 
-// Server bootstrap
-$server = \Mcp\Server::builder()
-    ->setServerInfo('consult-rector', '0.1.0-dev')
-    ->addTool(RectorTools::class)
-    ->build();
-
-$server->run(new \Mcp\Server\Transport\StdioTransport());
+// Server bootstrap — register each handler method explicitly. The mcp/sdk
+// manual-registration path takes the tool name/description from addTool(), NOT
+// from attributes, so a class-string addTool(RectorTools::class) would be
+// treated as an invokable (requiring __invoke) and fail.
+$builder = \Mcp\Server::builder()->setServerInfo('consult-rector', '0.1.0-dev');
+foreach (RectorTools::definitions() as $method => $def) {
+    $builder->addTool([RectorTools::class, $method], $def['name'], null, $def['description']);
+}
+$builder->build()->run(new \Mcp\Server\Transport\StdioTransport());
 ```
 
 ### Key constraints

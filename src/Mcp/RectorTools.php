@@ -4,19 +4,55 @@ declare(strict_types=1);
 
 namespace TypedDuck\ConsultRector\Mcp;
 
-use Mcp\Capability\Attribute\McpTool;
-
 /**
- * MCP tool surface (ADR-0003). One tool per CLI subcommand; each call spawns a
- * short-lived `consult-rector` subprocess so the long-lived server process never
+ * MCP tool surface (ADR-0003): one tool per CLI subcommand, each delegating to a
+ * short-lived `consult-rector` subprocess so the long-lived server never
  * accumulates Rector's autoload or memory.
+ *
+ * The mcp/sdk builder's manual registration path takes a tool's name and
+ * description from the `addTool()` call (not from attributes), so the mapping
+ * lives in {@see self::definitions()} and is wired up in bin/consult-rector-mcp.
  */
 final class RectorTools
 {
     /**
+     * Maps each handler method to its MCP tool name and description.
+     *
+     * @return array<string, array{name: string, description: string}>
+     */
+    public static function definitions(): array
+    {
+        return [
+            'search' => [
+                'name' => 'rector_search',
+                'description' => 'Search Rector rules by keyword',
+            ],
+            'dryRun' => [
+                'name' => 'rector_dry_run',
+                'description' => 'Propose Rector changes without rewriting files',
+            ],
+            'apply' => [
+                'name' => 'rector_apply',
+                'description' => 'Apply Rector changes, rewriting files',
+            ],
+            'ast' => [
+                'name' => 'rector_ast',
+                'description' => 'Apply a custom AST DSL transformation',
+            ],
+            'docIndex' => [
+                'name' => 'rector_doc_index',
+                'description' => 'Get the section index of a reference document',
+            ],
+            'docSection' => [
+                'name' => 'rector_doc_section',
+                'description' => 'Get a section from a reference document by number',
+            ],
+        ];
+    }
+
+    /**
      * @return array<string, mixed>
      */
-    #[McpTool(name: 'rector_search', description: 'Search Rector rules by keyword')]
     public function search(string $keyword): array
     {
         return $this->run(['search', $keyword]);
@@ -25,7 +61,6 @@ final class RectorTools
     /**
      * @return array<string, mixed>
      */
-    #[McpTool(name: 'rector_dry_run', description: 'Propose Rector changes without rewriting files')]
     public function dryRun(string $path, string $rule): array
     {
         return $this->run(['dry-run', $path, '--rules=' . $rule]);
@@ -34,7 +69,6 @@ final class RectorTools
     /**
      * @return array<string, mixed>
      */
-    #[McpTool(name: 'rector_apply', description: 'Apply Rector changes, rewriting files')]
     public function apply(string $path, string $rule): array
     {
         return $this->run(['apply', $path, '--rules=' . $rule]);
@@ -43,7 +77,6 @@ final class RectorTools
     /**
      * @return array<string, mixed>
      */
-    #[McpTool(name: 'rector_ast', description: 'Apply a custom AST DSL transformation')]
     public function ast(string $path, string $dsl): array
     {
         return $this->run(['ast', $path, $dsl]);
@@ -52,7 +85,6 @@ final class RectorTools
     /**
      * @return array<string, mixed>
      */
-    #[McpTool(name: 'rector_doc_index', description: 'Get the section index of a reference document')]
     public function docIndex(string $file): array
     {
         return $this->run(['doc', 'index', $file]);
@@ -61,7 +93,6 @@ final class RectorTools
     /**
      * @return array<string, mixed>
      */
-    #[McpTool(name: 'rector_doc_section', description: 'Get a section from a reference document by number')]
     public function docSection(string $file, int $section): array
     {
         return $this->run(['doc', 'section', $file, (string) $section]);
