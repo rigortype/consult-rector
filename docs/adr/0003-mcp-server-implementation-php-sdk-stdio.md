@@ -11,7 +11,7 @@ consult-rector exposes a hybrid interface: a slash command and an MCP tool. The 
 The upstream Rector is a PHP library. The consult-rector CLI is PHP (Composer package). The MCP protocol supports servers in any language via STDIO transport.
 
 Two options were evaluated:
-- **PHP** via [`modelcontextprotocol/php-sdk`](https://github.com/modelcontextprotocol/php-sdk) v0.6.0 (official SDK, Symfony/PHP Foundation)
+- **PHP** via the official PHP SDK — Composer package [`mcp/sdk`](https://github.com/modelcontextprotocol/php-sdk) v0.6.0 (`Mcp\` namespace)
 - **Node.js/TypeScript** via the MCP TypeScript SDK (more mature async/event-loop ecosystem)
 
 ## Decision
@@ -61,11 +61,12 @@ class RectorTools {
 }
 
 // Server bootstrap
-$transport = new \Mcp\Transport\StdioTransport();
 $server = \Mcp\Server::builder()
+    ->setServerInfo('consult-rector', '0.1.0-dev')
     ->addTool(RectorTools::class)
     ->build();
-$server->run($transport);
+
+$server->run(new \Mcp\Server\Transport\StdioTransport());
 ```
 
 ### Key constraints
