@@ -6,6 +6,8 @@ namespace TypedDuck\ConsultRector\Dsl;
 
 use TypedDuck\ConsultRector\Dsl\Transform\AddImport;
 use TypedDuck\ConsultRector\Dsl\Transform\AddTraitUse;
+use TypedDuck\ConsultRector\Dsl\Transform\ChangeTraitVisibilityAs;
+use TypedDuck\ConsultRector\Dsl\Transform\RenameTraitMethodAs;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceParamType;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceReturnType;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceType;
@@ -31,6 +33,8 @@ final class TransformResolver
             new ReplaceType(),
             new AddImport(),
             new AddTraitUse(),
+            new RenameTraitMethodAs(),
+            new ChangeTraitVisibilityAs(),
         ];
         foreach ($catalog as $transform) {
             $this->transforms[$transform->name()] = $transform;
