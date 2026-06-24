@@ -94,7 +94,7 @@ Custom PHP-Parser transformations expressed as an S-expression in JSON array for
 - **Transform naming**: kebab-case (`replace-param-type`, `add-import`, `add-trait-use`)
 - **Catalog scope**: DSL covers pinpoint transformations that no existing Rector rule handles. If a Rector rule exists for a transformation, skill/search should find it instead
 - **Phase 1 transforms** (initial release):
-  - `replace-type` — property/param/return type swapping
+  - `replace-type` — Replace a property type
   - `replace-param-type` — specific parameter type change
   - `replace-return-type` — method return type change
   - `add-import` — add use statement

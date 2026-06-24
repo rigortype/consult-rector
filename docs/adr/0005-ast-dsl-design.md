@@ -92,7 +92,7 @@ Result Formatter — produces diff + change metadata
 
 | Transform | Purpose |
 |-----------|---------|
-| `replace-type` | Replace property/param/return type |
+| `replace-type` | Replace a property type |
 | `replace-param-type` | Change a specific method parameter type |
 | `replace-return-type` | Change a method return type |
 | `add-import` | Add a use statement |
