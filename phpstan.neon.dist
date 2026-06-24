@@ -1,0 +1,13 @@
+includes:
+	- phar://phpstan.phar/conf/bleedingEdge.neon
+
+parameters:
+	level: max
+	phpVersion: 80200
+	paths:
+		- src
+		- tests
+	# PHPUnit lives in an isolated bamarni bin namespace, so make its autoloader
+	# available when analysing tests/ (ADR-0006 tool isolation).
+	bootstrapFiles:
+		- .vendor-bin/phpunit/vendor/autoload.php

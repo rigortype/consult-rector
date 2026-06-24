@@ -1,0 +1,35 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+// MCP server entry point (ADR-0003): a single long-lived PHP process speaking
+// JSON-RPC over STDIO. STDOUT is reserved for protocol messages — every
+// diagnostic must go to STDERR. Each tool call delegates to a short-lived
+// `consult-rector` CLI subprocess (see TypedDuck\ConsultRector\Mcp\RectorTools).
+
+(static function (): void {
+    foreach ([
+        __DIR__ . '/../../../autoload.php',
+        __DIR__ . '/../vendor/autoload.php',
+    ] as $autoload) {
+        if (is_file($autoload)) {
+            require $autoload;
+            break;
+        }
+    }
+
+    if (!class_exists(\Mcp\Server::class)) {
+        fwrite(STDERR, "consult-rector-mcp: mcp/sdk not found. Run `composer install`.\n");
+        exit(1);
+    }
+
+    // NOTE: builder/transport API tracks mcp/sdk ^0.6 (see ADR-0003); verify
+    // method names against the installed SDK version before first release.
+    $server = \Mcp\Server::builder()
+        ->setServerInfo('consult-rector', \TypedDuck\ConsultRector\Console\Application::VERSION)
+        ->addTool(\TypedDuck\ConsultRector\Mcp\RectorTools::class)
+        ->build();
+
+    $server->run(new \Mcp\Server\Transport\StdioTransport());
+})();

@@ -1,0 +1,6 @@
+/vendor/
+/.vendor-bin/*/vendor/
+/.phpunit.cache/
+/.phpunit.result.cache
+/infection.log
+.DS_Store

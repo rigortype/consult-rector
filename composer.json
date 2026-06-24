@@ -1,0 +1,51 @@
+{
+    "name": "typedduck/consult-rector",
+    "description": "Interactive PHP refactoring for AI agents — a conversational wrapper around Rector and PHP-Parser.",
+    "license": "MPL-2.0",
+    "type": "library",
+    "keywords": ["rector", "refactoring", "ai", "mcp", "php-parser", "ast"],
+    "require": {
+        "php": ">=8.2",
+        "ext-json": "*",
+        "mcp/sdk": "^0.6",
+        "rector/rector": "^2.5",
+        "symfony/console": "^7.0"
+    },
+    "require-dev": {
+        "bamarni/composer-bin-plugin": "^1.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "TypedDuck\\ConsultRector\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "TypedDuck\\ConsultRector\\Tests\\": "tests/"
+        }
+    },
+    "bin": [
+        "bin/consult-rector",
+        "bin/consult-rector-mcp"
+    ],
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "bamarni/composer-bin-plugin": true
+        }
+    },
+    "extra": {
+        "bamarni-bin": {
+            "bin-links": false,
+            "forward-command": true,
+            "target-directory": ".vendor-bin"
+        }
+    },
+    "scripts": {
+        "phpstan": ".vendor-bin/phpstan/vendor/bin/phpstan analyse",
+        "ecs": ".vendor-bin/ecs/vendor/bin/ecs check",
+        "ecs:fix": ".vendor-bin/ecs/vendor/bin/ecs check --fix",
+        "test": ".vendor-bin/phpunit/vendor/bin/phpunit",
+        "infection": ".vendor-bin/infection/vendor/bin/infection"
+    }
+}

@@ -1,0 +1,21 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+(static function (): void {
+    foreach ([
+        __DIR__ . '/../../../autoload.php', // installed as a dependency
+        __DIR__ . '/../vendor/autoload.php', // standalone clone
+    ] as $autoload) {
+        if (is_file($autoload)) {
+            require $autoload;
+            (new \TypedDuck\ConsultRector\Console\Application())->run();
+
+            return;
+        }
+    }
+
+    fwrite(STDERR, "consult-rector: Composer autoloader not found. Run `composer install`.\n");
+    exit(1);
+})();

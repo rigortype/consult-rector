@@ -1,0 +1,16 @@
+{
+    // Mutation testing (ADR-0006): runs weekly / on-demand, never blocks PR merges.
+    "source": {
+        "directories": ["src"],
+        // Exclude side-effect-heavy layers (subprocess IO); focus on pure computation.
+        "excludes": ["Console", "Mcp"]
+    },
+    "mutators": {
+        "@default": true
+    },
+    "minMsi": 90,
+    "minCoveredMsi": 95,
+    "logs": {
+        "text": "php://stderr"
+    }
+}
