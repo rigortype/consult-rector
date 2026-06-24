@@ -11,6 +11,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Throwable;
+use TypedDuck\ConsultRector\Rector\RuleCatalog;
 
 #[AsCommand(name: 'search', description: 'Search existing Rector rules by keyword')]
 final class SearchCommand extends Command
@@ -24,9 +26,33 @@ final class SearchCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        (new SymfonyStyle($input, $output))->getErrorStyle()
-            ->warning('`search` is scaffolded but not yet implemented.');
+        /** @var string $keyword */
+        $keyword = $input->getArgument('keyword');
+        $errorStyle = (new SymfonyStyle($input, $output))->getErrorStyle();
 
-        return Command::FAILURE;
+        try {
+            $rules = RuleCatalog::fromInstalledRector()->search($keyword);
+        } catch (Throwable $exception) {
+            $errorStyle->error($exception->getMessage());
+
+            return Command::FAILURE;
+        }
+
+        if ($input->getOption('json') === true) {
+            $output->writeln(json_encode([
+                'keyword' => $keyword,
+                'count' => count($rules),
+                'rules' => $rules,
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+
+            return Command::SUCCESS;
+        }
+
+        foreach ($rules as $rule) {
+            $output->writeln($rule);
+        }
+        $errorStyle->note(sprintf('%d rule(s) match "%s".', count($rules), $keyword));
+
+        return Command::SUCCESS;
     }
 }
