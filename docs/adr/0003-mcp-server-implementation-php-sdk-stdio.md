@@ -6,7 +6,7 @@ Proposed.
 
 ## Context
 
-consult-rector exposes a hybrid interface: an OpenCode slash command and an MCP tool. The MCP server needs an implementation language and transport strategy.
+consult-rector exposes a hybrid interface: a slash command and an MCP tool. The MCP server needs an implementation language and transport strategy.
 
 The upstream Rector is a PHP library. The consult-rector CLI is PHP (Composer package). The MCP protocol supports servers in any language via STDIO transport.
 
@@ -21,7 +21,7 @@ Two options were evaluated:
 ### Architecture
 
 ```
-MCP client (OpenCode/Claude Code)
+MCP client (Claude Code / OpenCode)
          ↕ STDIO JSON-RPC
 consult-rector mcp           ← single PHP process, long-lived
          ↕ shell_exec()

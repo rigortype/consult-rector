@@ -40,7 +40,28 @@ Multiple transformations are composed with the `chain` transform:
   ["add-import", ["class", "App\\Enum\\OrderStatus"]]]
 ```
 
-Each sub-transform is compiled into a separate temporary Rector rule file and executed sequentially by Rector.
+Each sub-transform is compiled into a separate temporary Rector rule file. They are **not** run independently against the original code — that would make a dependent chain incoherent: a later step would not see an earlier step's output, and two steps touching the same lines would produce non-composable diffs.
+
+#### Sandbox-sequential execution
+
+A chain runs the same way for both dry-run and apply:
+
+1. Copy the target files into a temporary **sandbox**.
+2. Apply each sub-transform **in order, in real apply mode, against the sandbox** — so step *n* sees the cumulative result of steps `1..n-1`.
+3. Compute one **consolidated diff** between the original files and the final sandbox state.
+
+- **dry-run** stops there: it returns the consolidated diff and discards the sandbox. The user sees a single original→final diff per file (the same dry-run JSON schema as a single transform), never N partial diffs.
+- **apply** commits the sandbox back to the real files **only after the whole chain succeeds**.
+
+A single (non-chain) transform needs no sandbox — it compiles to one temporary Rector rule and uses Rector's native dry-run/apply directly. The sandbox exists specifically to make *dependent* chains coherent.
+
+#### Atomicity
+
+Because real files are written only on full success, a chain is **all-or-nothing**: if sub-transform *n* fails, the real files are left untouched and the failing step is reported (`files_errored`). There is no half-applied chain.
+
+#### `chain` is a composition primitive, not a catalog leaf
+
+`chain` does not transform code itself — it sequences other transforms — so it is intentionally absent from the built-in transform catalog. It is a structural primitive, available from Phase 1 alongside the leaf transforms.
 
 ### Transform naming
 

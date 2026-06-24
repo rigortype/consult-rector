@@ -67,7 +67,7 @@ A single SKILL.md that inlines all Rector knowledge and calls Rector directly.
 
 Expose consult-rector only as an MCP tool, no slash command.
 
-**Rejected because**: OpenCode agents cannot invoke MCP tools via skill prompts — they require a slash command or tool-call interface. MCP alone would limit reach.
+**Rejected because**: Agents cannot auto-invoke MCP tools from a skill-description match — MCP tools must be called explicitly, so a slash-command skill is still needed for description-triggered discovery. MCP alone would limit reach.
 
 ## Consequences
 

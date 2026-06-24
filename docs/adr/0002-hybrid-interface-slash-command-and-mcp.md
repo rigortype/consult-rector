@@ -6,7 +6,7 @@ Proposed.
 
 ## Context
 
-The consult-rector skill needs to be invocable by AI agents. There are two primary interface mechanisms in the OpenCode ecosystem:
+The consult-rector skill needs to be invocable by AI agents. There are two primary interface mechanisms available to skill-capable agent platforms (e.g. Claude Code, OpenCode):
 - **Slash commands** (`/consult-rector`): defined in a skill, triggered by the AI when the skill's description matches the user's request
 - **MCP tools**: exposed via the Model Context Protocol, available as tool choices to the AI
 
@@ -35,7 +35,7 @@ MCP invocation:
 
 ## Rationale
 
-- **Slash commands** are how skills naturally fire in OpenCode. Keeping this path preserves the standard skill discovery flow.
+- **Slash commands** are how skills naturally fire on agent platforms. Keeping this path preserves the standard skill discovery flow.
 - **MCP tools** become valuable when consult-rector is composed with other agents or IDEs that speak MCP. They also allow fine-grained tool definitions per operation (e.g. separate tools for `rector_search`, `rector_dry_run`, `rector_apply` — see ADR-0003 for the canonical tool set).
 - Both share the same CLI backend — no duplication of transformation logic.
 
@@ -51,7 +51,7 @@ Simpler to implement. One interface to maintain.
 
 Clean, typed interface. No skill glue needed.
 
-**Rejected because**: OpenCode cannot route MCP tools based on skill descriptions — tools must be explicitly called by the AI or user. The skill's trigger-on-description mechanism is lost.
+**Rejected because**: Agent platforms cannot route MCP tools based on skill descriptions — tools must be explicitly called by the AI or user. The skill's trigger-on-description mechanism is lost.
 
 ## Consequences
 
