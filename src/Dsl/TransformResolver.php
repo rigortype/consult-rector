@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace TypedDuck\ConsultRector\Dsl;
 
+use TypedDuck\ConsultRector\Dsl\Transform\AddImport;
+use TypedDuck\ConsultRector\Dsl\Transform\AddTraitUse;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceParamType;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceReturnType;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceType;
@@ -23,7 +25,14 @@ final class TransformResolver
 
     public function __construct()
     {
-        foreach ([new ReplaceParamType(), new ReplaceReturnType(), new ReplaceType()] as $transform) {
+        $catalog = [
+            new ReplaceParamType(),
+            new ReplaceReturnType(),
+            new ReplaceType(),
+            new AddImport(),
+            new AddTraitUse(),
+        ];
+        foreach ($catalog as $transform) {
             $this->transforms[$transform->name()] = $transform;
         }
     }
