@@ -31,8 +31,7 @@ abstract class AbstractRectorCommand extends Command
             ->addOption('with-config', null, InputOption::VALUE_REQUIRED, "Merge the project's rector.php (asks permission first)")
             ->addOption('json', null, InputOption::VALUE_NONE, 'Emit machine-readable JSON for AI consumption')
             ->addOption('diff-style', null, InputOption::VALUE_REQUIRED, 'Diff representation: unified or array', 'unified')
-            ->addOption('phpstan-binary', null, InputOption::VALUE_REQUIRED, 'Explicit PHPStan binary for the Phase 2 remediation loop')
-            ->addOption('max-remediation-iterations', null, InputOption::VALUE_REQUIRED, 'Phase 2 remediation iteration cap; 0 disables remediation', '3');
+            ->addOption('phpstan-binary', null, InputOption::VALUE_REQUIRED, 'Explicit PHPStan binary for --verify');
     }
 
     protected function resolvePath(InputInterface $input): string
