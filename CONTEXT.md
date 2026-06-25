@@ -106,23 +106,25 @@ Custom PHP-Parser transformations expressed as an S-expression in JSON array for
 - **Detailed catalog to be refined during implementation**
 - **Output**: same schema as dry-run/apply
 
-## Refactoring workflow (two-phase strategy + verification)
+## Refactoring workflow (declarative change + usage-site propagation)
 
-**Phase 1 — Declarative**: Apply the main transformation (Rector rule or AST DSL)
-**Phase 2 — Remediation**: Run PHPStan → detect remaining type errors → apply targeted fixes (bounded loop, see below)
-**Phase 3 — Verify**: Re-run PHPStan to confirm zero errors
+For an intentional breaking change to a declaration whose new shape must reach every usage (e.g. a stringly-typed param → enum), see ADR-0004.
 
-- **PHPStan execution**: the CLI runs PHPStan and returns the structured error *delta*; the remediation **loop is skill-orchestrated** (the CLI cannot generate fixes, only execute them). The CLI enforces a hard iteration ceiling as a safety net
+**Phase 1 — Declarative change**: change the declaration with a declaration DSL transform (e.g. `replace-param-type` `string` → enum)
+**Phase 2 — Propagation**: rewrite the usage sites with a usage-site transform (e.g. `migrate-arg-to-enum`)
+**Phase 3 — Verify**: PHPStan reports zero new errors on the affected set ⇒ migration complete (for everything the type system can see)
+
+- **Hybrid discovery**: the AST pass does the literal→case rewrites — it alone knows *which* case a literal becomes (PHPStan only says "string given"); PHPStan is the **completeness oracle** whose delta enumerates/verifies and flags non-type-checkable sites (dynamic/untyped) for manual handling
+- **PHPStan execution**: the CLI runs PHPStan and returns the structured error *delta* against a pre-change baseline; the loop is **skill-orchestrated** (the CLI cannot generate fixes, only execute them)
 - **PHPStan detection priority** (first match wins):
   1. Explicitly configured (`--phpstan-binary` option or config file)
   2. Installed alongside consult-rector (`vendor/bin/phpstan` in the same composer.json) — **excludes** the version vendored inside `vendor/rector/rector/vendor/`
   3. Target project's `vendor/bin/phpstan`
   4. Composer global installation (`~/.composer/vendor/bin/phpstan` or `~/.config/composer/vendor/bin/phpstan`)
   5. `phpstan` on PATH
-  6. Not found → remediation phase skipped (warning emitted)
-- **Remediation scope**: type errors only. Unused imports, code style → deferred to project's own rector.php config or ECS/php-cs-fixer
-- **Remediation loop control**: targets only *new* errors (delta vs a pre-transform baseline; pre-existing project errors untouched). Stop conditions — **converged** (delta = 0) / **exhausted** (`--max-remediation-iterations`, default 3; `0` disables) / **stalled** (an iteration fails to strictly reduce the remaining count). On non-convergence, applied changes are kept and remaining errors reported — recovery via VCS, no auto-rollback. Cross-file breakage in callers is out of scope
-- **Config merging**: user-permission-gated before merging project's rector.php with temporary config
+  6. Not found → verification skipped (warning emitted; rewrites still apply)
+- **Scope**: project-wide (usage sites span the codebase); the declaration + usages apply atomically via `chain`
+- **Config merging**: user-permission-gated before merging the project's rector.php with the temporary config
 
 ## Testing strategy
 
