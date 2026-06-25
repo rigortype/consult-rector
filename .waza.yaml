@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/microsoft/waza/main/schemas/config.schema.json
+#
+# Project defaults for waza (https://github.com/microsoft/waza).
+# This repo keeps SKILL.md at the project root (not under skills/<name>/),
+# so point `paths.skills` at "." for discovery to find it.
+paths:
+  skills: .
+  evals: evals/
+  results: results/
+files:
+  evalFile: eval.yaml
+  taskGlob: tasks/*.yaml
+  taskFileSuffix: .yaml
+defaults:
+  engine: copilot-sdk
+  model: gpt-5-mini
+  timeout: 300
+  parallel: false

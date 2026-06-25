@@ -1,0 +1,79 @@
+name: Skill Eval
+
+# Trigger/anti-trigger evaluation of the consult-rector skill via waza
+# (https://github.com/microsoft/waza). This is a NON-BLOCKING, advisory
+# workflow: it is run manually or weekly, never as a required PR check.
+#
+# Rationale (see docs/adr/0006-testing-and-ci-strategy.md): LLM-driven evals
+# are non-deterministic and cost tokens, so — like the Infection mutation job —
+# they run on a schedule + manual dispatch rather than gating merges.
+#
+# A trigger eval only tests skill *routing*, so this job needs NO PHP toolchain
+# (no composer / Rector / PHPStan) — it is independent of the main CI workflow.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Weekly, Monday 00:00 UTC (mirrors the Infection cadence in ADR-0006).
+    - cron: "0 0 * * 1"
+  # Advisory PR run is intentionally left off so it can never block merges.
+  # To enable it later, keep `continue-on-error: true` on the run step below:
+  # pull_request:
+  #   branches: [master]
+  #   paths: ["SKILL.md", "CONTEXT.md", "references/**", "evals/**", ".waza.yaml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skill-eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eval:
+    name: waza trigger eval
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Install waza ---------------------------------------------------
+      # Official path: the waza Azure Developer CLI (azd) extension.
+      # Pin the extension version once a release cadence is known.
+      # Alternative: download a pinned waza binary from microsoft/waza releases.
+      - name: Install Azure Developer CLI
+        uses: Azure/setup-azd@v2
+      - name: Install waza extension
+        run: |
+          azd config set alpha.extensions on
+          azd ext source add -n waza -t url \
+            -l https://raw.githubusercontent.com/microsoft/waza/main/registry.json
+          azd ext install microsoft.azd.waza
+
+      # --- Discovery sanity check (free — no model calls) -----------------
+      # This repo keeps SKILL.md at the project root, so waza needs `--path .`
+      # to discover the skill (default discovery only scans skills/). If this
+      # step prints "consult-rector", the run step below can resolve it too.
+      - name: Verify skill + eval are discovered
+        run: azd waza coverage . --path . -f markdown
+
+      # --- TODO: authenticate the executor engine -------------------------
+      # The eval calls an LLM (engine: copilot-sdk, model: gpt-5-mini in
+      # evals/consult-rector/eval.yaml). CI has no ambient session, so a
+      # credential must be supplied as a repo secret. Confirm the exact env
+      # var/secret for your waza account, then add it to the run step, e.g.:
+      #   env:
+      #     <WAZA_ENGINE_AUTH_ENV>: ${{ secrets.<WAZA_ENGINE_AUTH_SECRET> }}
+      # Model availability is credential-dependent — adjust the model in
+      # eval.yaml if gpt-5-mini is not offered by the CI credential.
+      - name: Run trigger eval (advisory — does not block)
+        continue-on-error: true
+        run: azd waza run consult-rector --output-dir ./results
+
+      - name: Upload eval results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: ./results
+          retention-days: 30
