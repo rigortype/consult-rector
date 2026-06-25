@@ -103,6 +103,7 @@ Chain multiple transformations:
 | `add-trait-use` | Add a trait to a class |
 | `rename-trait-method-as` | Rename trait method via `use T { ... as ...; }` |
 | `change-trait-visibility-as` | Change trait method visibility via `use T { ... as private; }` |
+| `migrate-arg-to-enum` | Usage-site: rewrite a call's literal argument to an enum case (ADR-0004) |
 
 For transformations covered by existing Rector rules (readonly promotion, constructor promotion, bulk changes), search for and use the Rector rule instead.
 

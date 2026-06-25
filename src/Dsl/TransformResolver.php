@@ -7,6 +7,7 @@ namespace TypedDuck\ConsultRector\Dsl;
 use TypedDuck\ConsultRector\Dsl\Transform\AddImport;
 use TypedDuck\ConsultRector\Dsl\Transform\AddTraitUse;
 use TypedDuck\ConsultRector\Dsl\Transform\ChangeTraitVisibilityAs;
+use TypedDuck\ConsultRector\Dsl\Transform\MigrateArgToEnum;
 use TypedDuck\ConsultRector\Dsl\Transform\RenameTraitMethodAs;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceParamType;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceReturnType;
@@ -35,6 +36,7 @@ final class TransformResolver
             new AddTraitUse(),
             new RenameTraitMethodAs(),
             new ChangeTraitVisibilityAs(),
+            new MigrateArgToEnum(),
         ];
         foreach ($catalog as $transform) {
             $this->transforms[$transform->name()] = $transform;

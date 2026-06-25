@@ -101,6 +101,7 @@ Custom PHP-Parser transformations expressed as an S-expression in JSON array for
   - `add-trait-use` — add trait to class
   - `rename-trait-method-as` — rename trait method via `use T { ... as ...; }`
   - `change-trait-visibility-as` — change trait method visibility via `use T { ... as private; }`
+  - `migrate-arg-to-enum` — usage-site: rewrite a call's literal argument to an enum case (ADR-0004 propagation)
 - **Excluded from DSL** (delegate to Rector rules instead): readonly promotion, constructor promotion, class-level readonly, bulk code style changes
 - **Detailed catalog to be refined during implementation**
 - **Output**: same schema as dry-run/apply

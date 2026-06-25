@@ -84,6 +84,9 @@ Result Formatter — produces diff + change metadata
 | `add-trait-use` | Add a trait to a class |
 | `rename-trait-method-as` | Rename trait method via `use T { ... as ...; }` |
 | `change-trait-visibility-as` | Change trait method visibility via `use T { ... as private; }` |
+| `migrate-arg-to-enum` | **Usage-site**: rewrite a call's literal argument to an enum case (ADR-0004 propagation) |
+
+The first seven change a **declaration** (a class member or its `use` statements); `migrate-arg-to-enum` is the first **usage-site** transform — it rewrites call nodes across the project to propagate a declaration change (ADR-0004).
 
 ### Extension mechanism
 
