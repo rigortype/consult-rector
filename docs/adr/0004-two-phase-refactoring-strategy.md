@@ -1,4 +1,4 @@
-# ADR-0004: Two-phase refactoring strategy with PHPStan remediation
+# ADR-0004: Declarative change + usage-site propagation (with PHPStan verification)
 
 ## Status
 
@@ -6,37 +6,53 @@ Proposed.
 
 ## Context
 
-Rector transformations can be overeager — they may change more than intended, miss edge cases, or introduce type errors in dependent code. A dry-run + human approval workflow catches unintended transformations, but type-level correctness after the change is not guaranteed.
+The headline use case is an **intentional breaking change to a declaration** whose new shape must be propagated to every usage site. The motivating example: replace a stringly-typed parameter — `sort(string $dir)` documented `@param 'asc'|'desc' $dir` — with an enum, `sort(AscDesc $dir)`, and rewrite every caller's `'asc'` / `'desc'` literal to `AscDesc::Asc` / `AscDesc::Desc`.
 
-We need a post-transformation verification step that catches remaining issues automatically.
+This is *not* about correcting accidental breakage that Rector introduced. The break is deliberate; the work is finding all usages of the changed declaration and migrating them to the intended pattern, then proving nothing was missed.
+
+The hard parts: (a) usage sites are spread across the whole project, (b) deciding *what* each site becomes requires reading the actual literal, and (c) guaranteeing *completeness* — no caller left on the old pattern.
 
 ## Decision
 
-Adopt a **two-phase refactoring strategy** (three if counting verification):
+A three-phase flow:
 
-### Phases
+**Phase 1 — Declarative change.** Change the declaration to the new pattern with a declaration DSL transform (e.g. `replace-param-type` `string` → `App\AscDesc`). Standard dry-run → approve → apply.
 
-**Phase 1 — Declarative**: Apply the main transformation (Rector rule or AST DSL). Standard dry-run → approve → apply workflow.
+**Phase 2 — Propagation.** Find and rewrite the usage sites with a usage-site DSL transform (e.g. `migrate-arg-to-enum`). Discovery is **hybrid**:
 
-**Phase 2 — Remediation**: Run PHPStan against the changed files. Detect remaining type errors. Apply targeted fixes using AST DSL for each error. Loop under bounded control (see *Remediation loop control* below).
+- **AST search is the doer.** Enumerate calls to the changed symbol, inspect each literal argument, and rewrite it per an **explicit** value→case map (`'asc' → App\AscDesc::Asc`). The AST is what knows *which* case a literal becomes — PHPStan only reports "string given", not the value.
+- **PHPStan is the completeness oracle.** After the rewrites, run PHPStan over the affected set. Remaining new errors are exactly the sites the AST pass could not handle — dynamic, variable, or untyped values — which are reported for manual handling. Zero new errors means every type-checkable usage was migrated.
 
-**Phase 3 — Verify**: Re-run PHPStan to confirm zero new errors on the changed files.
+**Phase 3 — Verify.** The Phase 2 PHPStan run *is* the verification: zero new type errors on the affected set ⇒ the migration is complete for everything the type system can see.
 
-### Remediation loop control
+### Why hybrid (not one or the other)
 
-**Loop ownership.** The CLI cannot generate fixes — mapping a PHPStan error to an AST DSL transform requires AI judgment — so the **skill orchestrates the loop** while the CLI provides primitives: run PHPStan, return the structured error delta, apply the AST DSL fix the skill produced. The CLI also enforces a hard iteration ceiling as a safety net for non-AI callers.
+- **PHPStan-only** can't decide the replacement (it knows *where* is broken, not *what* to put there) and misses untyped/dynamic sites.
+- **Heuristic-only** has no completeness guarantee and risks false positives on same-named methods.
+- **Together**: the AST pass does the mechanical value→case substitution; PHPStan guarantees nothing type-checkable was missed. This is the role split the design called for — not an either/or.
 
-**Scope — new errors only (delta against a baseline).** Before Phase 1 apply, the CLI captures a PHPStan baseline over the target file set. After apply, remediation targets only the *delta*: errors present after the transform that were absent in the baseline. Pre-existing project errors are never touched. Error identity is matched on `(file, PHPStan identifier, normalized message)`, independent of line number so it survives line shifts. Errors the transform surfaces in *other* files (e.g. callers of a changed signature) are out of scope — the changed-file boundary is intentional; cross-file breakage is left to the project's own CI.
+### Scope — project-wide
 
-**Stop conditions** (first to trigger wins):
+Usage sites live across the codebase; finding them is the entire point. Phase 2 operates over the whole target (a path / directory / project), **not** a changed-file boundary.
 
-1. **Converged** — the new-error delta reaches zero. Success; proceed to Phase 3.
-2. **Exhausted** — iteration count reaches `--max-remediation-iterations` (default **3**; `0` disables remediation entirely). Stop with errors remaining.
-3. **Stalled** — an iteration fails to *strictly* reduce the remaining new-error count. Catches oscillation and unfixable errors: an error the skill cannot map to a catalog transform never lowers the count, so the loop terminates naturally instead of spinning.
+### Atomicity
 
-**On non-convergence (Exhausted / Stalled).** Applied changes are **kept** — Phase 1 was human-approved and partial remediation only improves the result. Remaining errors are reported to the AI/human; there is no automatic rollback. Recovery, if wanted, is via the user's VCS (`git restore`), consistent with the apply schema's reliance on `git diff`.
+The declaration change and the usage rewrites are applied **together** (a `chain`) so the project never sits in a transiently broken intermediate state (declaration changed but callers not yet, or vice versa).
 
-**PHPStan absent.** If no PHPStan binary is found (detection item 6 below), Phase 2 is skipped at zero iterations with a warning — remediation is best-effort, never a hard dependency.
+### The value→case map
+
+Supplied **explicitly** in the DSL, so the transform also works for non-backed enums and non-obvious mappings:
+
+```json
+["migrate-arg-to-enum",
+  ["method", "Sorter::sort"],
+  ["arg", 1],
+  ["map", [["asc", "App\\AscDesc::Asc"], ["desc", "App\\AscDesc::Desc"]]]]
+```
+
+### PHPStan as the completeness oracle
+
+PHPStan is run after the rewrites to confirm completeness and to enumerate any residual sites. The loop is **skill-orchestrated** — mapping a residual PHPStan error to a follow-up fix needs AI judgment — while the CLI provides the primitive: run PHPStan over the affected set and return the structured error **delta** against a pre-change baseline (errors present after the change that were absent before). Error identity is matched on `(file, PHPStan identifier, normalized message)`, independent of line number.
 
 ### PHPStan detection priority
 
@@ -47,33 +63,36 @@ The CLI searches for a PHPStan binary in this order (first match wins):
 3. **Target project** `vendor/bin/phpstan`
 4. **Composer global** (`~/.composer/vendor/bin/phpstan` or `~/.config/composer/vendor/bin/phpstan`)
 5. **PATH** (`phpstan`)
-6. **Not found** → remediation phase skipped with a warning
-
-### Remediation scope
-
-PHPStan type errors only. Unused imports, code style violations, and other non-type issues are deferred to the project's own tooling (rector.php config, ECS, php-cs-fixer).
+6. **Not found** → verification is skipped with a warning (the AST rewrites still apply, but completeness is unverified)
 
 ### Config merging
 
-If the target project has its own `rector.php`, the user may opt to merge it with consult-rector's temporary config via `--with-config=rector.php`. This merge requires explicit user permission — consult-rector does not auto-discover or auto-merge project configs.
+If the target project has its own `rector.php`, the user may merge it via `--with-config=rector.php`. This requires explicit user permission — consult-rector does not auto-discover or auto-merge project configs.
 
 ## Considered Options
 
-### Single-pass apply
+### Accidental-error remediation (original framing)
 
-Apply the transformation and stop. Let the user fix remaining issues manually.
+Run PHPStan after a transform and auto-fix whatever type errors it *accidentally* introduced.
 
-**Rejected because**: The whole point of consult-rector is reducing manual effort. Automated remediation catches what Rector misses.
+**Superseded because**: the real need is propagating an *intentional* breaking change to its usages, not patching Rector's mistakes. The mechanics (PHPStan delta against a baseline) survive but serve a different goal.
 
-### Defer all post-processing to the user's CI
+### PHPStan-driven discovery only
 
-Run nothing after apply.
+Apply the declaration change, let PHPStan errors enumerate the broken call sites, fix each.
 
-**Rejected because**: CI feedback is slow. The AI-skill loop should converge in one session, not across commits.
+**Rejected because**: PHPStan reports *where* but not *what* (which case a literal becomes), so AST inspection is needed anyway; it also misses untyped/dynamic sites and forces a transiently broken state.
+
+### Heuristic discovery only
+
+Find call sites by symbol/method name and rewrite, with no PHPStan step.
+
+**Rejected because**: no completeness guarantee and false positives on same-named methods. Good for discovery, not for proof.
 
 ## Consequences
 
-- consult-rector must include PHPStan execution capability, adding a dependency concern (or detection logic).
-- The remediation loop is bounded (iteration cap + no-progress stop), so worst-case latency is capped — but some transforms will finish with residual errors the user must resolve manually, and cross-file breakage in callers is out of scope by design.
-- The `--with-config` merge requires careful config-aware config assembly logic.
-- PHPStan found via the target project may have a different config/level than what consult-rector expects.
+- A new **usage-site transform family** is required — rewriting call nodes (`MethodCall` / `StaticCall`) by literal argument — distinct from the existing declaration transforms.
+- PHPStan is used as a **completeness oracle**, not an error-fixer; the CLI provides the PHPStan-delta primitive and the loop is skill-orchestrated.
+- Phase 2 is **project-wide** and the migration is applied **atomically** (chain) to avoid a broken intermediate.
+- Completeness is "no type-checkable misses" — sites whose values are dynamic or untyped are reported for manual handling, never silently dropped.
+- `--phpstan-binary` and the verification step depend on PHPStan being present; absent it, rewrites apply but completeness is unverified.
