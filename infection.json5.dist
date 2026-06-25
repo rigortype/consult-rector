@@ -8,6 +8,16 @@
     "mutators": {
         "@default": true
     },
+    // Load the project (root) autoloader in every Infection test process so the
+    // app's Composer\InstalledVersions lookups (e.g. rector/rector) resolve —
+    // the bin-namespace phpunit binary otherwise only sees its own installed.php.
+    "bootstrap": "vendor/autoload.php",
+    // PHPUnit lives in an isolated bamarni bin namespace (bin-links: false), and
+    // its coverage run needs the relaxed config under build/ (see that file).
+    "phpUnit": {
+        "configDir": "build",
+        "customPath": ".vendor-bin/phpunit/vendor/bin/phpunit"
+    },
     "minMsi": 90,
     "minCoveredMsi": 95,
     "logs": {

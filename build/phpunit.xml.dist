@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Relaxed PHPUnit config used ONLY by Infection's coverage runs (ADR-0006).
+  The strict gate config is /phpunit.xml.dist; Infection points here via
+  infection.json5.dist (phpUnit.configDir: build). Coverage collection trips
+  the strict suite's failOnRisky + beStrictAboutCoverageMetadata on E2E tests
+  that legitimately exercise many classes, so those flags are dropped here.
+  Paths are relative to this file (one level below the project root).
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="../.vendor-bin/phpunit/vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="../vendor/autoload.php"
+         colors="true"
+         cacheDirectory="../.phpunit.cache"
+         executionOrder="default">
+    <testsuites>
+        <testsuite name="consult-rector">
+            <directory>../tests</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>../src</directory>
+        </include>
+    </source>
+</phpunit>
