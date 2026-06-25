@@ -47,6 +47,10 @@ final class RectorTools
                 'name' => 'rector_doc_section',
                 'description' => 'Get a section from a reference document by number',
             ],
+            'phpStan' => [
+                'name' => 'rector_phpstan',
+                'description' => 'Run PHPStan over a path; with a baseline file, report only new errors (ADR-0004)',
+            ],
         ];
     }
 
@@ -96,6 +100,19 @@ final class RectorTools
     public function docSection(string $file, int $section): array
     {
         return $this->run(['doc', 'section', $file, (string) $section]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function phpStan(string $path, ?string $baseline = null): array
+    {
+        $args = ['phpstan', $path];
+        if ($baseline !== null && $baseline !== '') {
+            $args[] = '--baseline=' . $baseline;
+        }
+
+        return $this->run($args);
     }
 
     /**

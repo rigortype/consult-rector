@@ -40,6 +40,7 @@ Rector / PHP-Parser
 | `rector_ast` | `consult-rector ast <file> '<dsl>' --json` | Custom AST transformation |
 | `rector_doc_index` | `consult-rector doc index <ref-file>` | Get section index of reference doc |
 | `rector_doc_section` | `consult-rector doc section <ref-file> <N>` | Get section content |
+| `rector_phpstan` | `consult-rector phpstan <path> [--baseline] --json` | Run PHPStan; report errors or the baseline delta (ADR-0004) |
 
 ### Implementation pattern (PHP SDK)
 
