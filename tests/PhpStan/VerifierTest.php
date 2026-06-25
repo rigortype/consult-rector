@@ -60,5 +60,29 @@ final class VerifierTest extends TestCase
         $new = $verification['new_errors'] ?? null;
         self::assertIsArray($new);
         self::assertNotSame([], $new);
+
+        // Kills the L47 UnwrapArrayMap mutant: each new error must be normalised to
+        // a plain array via PhpStanError::toArray(), NOT left as a PhpStanError
+        // object. The mutant drops array_map() and would expose the objects.
+        foreach ($new as $error) {
+            self::assertIsArray($error);
+            self::assertArrayHasKey('file', $error);
+            self::assertArrayHasKey('line', $error);
+            self::assertArrayHasKey('message', $error);
+            self::assertArrayHasKey('identifier', $error);
+            self::assertSame($file, $error['file']);
+        }
+    }
+
+    public function testVerificationIsSkippedWhenThereIsNoBaseline(): void
+    {
+        $verifier = new Verifier();
+
+        $verification = $verifier->verify(null, ['src']);
+
+        self::assertSame(true, $verification['skipped'] ?? null);
+        self::assertSame('no PHPStan binary found', $verification['reason'] ?? null);
+        self::assertArrayNotHasKey('ok', $verification);
+        self::assertArrayNotHasKey('new_errors', $verification);
     }
 }

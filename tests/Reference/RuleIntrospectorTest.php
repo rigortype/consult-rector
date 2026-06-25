@@ -32,4 +32,30 @@ final class RuleIntrospectorTest extends TestCase
         self::assertSame([], $descriptor->codeSamples);
         self::assertSame('Such', $descriptor->category);
     }
+
+    /**
+     * Kills the L57 UnwrapLtrim mutant: the category is the SECOND namespace
+     * segment. A leading namespace separator must be stripped first, otherwise
+     * explode() yields a leading empty segment and the category shifts by one
+     * (here it would wrongly become 'Rector' instead of 'Php74').
+     */
+    public function testCategorySkipsLeadingNamespaceSeparator(): void
+    {
+        $descriptor = (new RuleIntrospector())
+            ->describe('\\Rector\\Php74\\Rector\\Closure\\ClosureToArrowFunctionRector');
+
+        self::assertSame('Php74', $descriptor->category);
+    }
+
+    /**
+     * Pins the un-prefixed counterpart so the L57 assertion above is unambiguous:
+     * without a leading separator the same FQCN already yields 'Php74'.
+     */
+    public function testCategoryOfUnprefixedFqcnIsTheSecondSegment(): void
+    {
+        $descriptor = (new RuleIntrospector())
+            ->describe('Rector\\Php74\\Rector\\Closure\\ClosureToArrowFunctionRector');
+
+        self::assertSame('Php74', $descriptor->category);
+    }
 }

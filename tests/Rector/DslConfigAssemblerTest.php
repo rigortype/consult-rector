@@ -48,6 +48,41 @@ final class DslConfigAssemblerTest extends TestCase
         self::assertNotSame([], token_get_all($config, TOKEN_PARSE));
     }
 
+    /**
+     * The paths line is `'        ' . $pathLiterals . ','` (8-space indent inside
+     * the `$rectorConfig->paths([ ... ]);` block, with a trailing comma). The
+     * exact line kills the line-61 Concat / ConcatOperandRemoval mutants that drop
+     * the indent, drop the trailing comma, or reorder the operands.
+     */
+    public function testEmitsPathsLineWithExactIndentAndTrailingComma(): void
+    {
+        $config = (new DslConfigAssembler())->assemble(
+            ['a.php', 'b.php'],
+            [
+                new CompiledRule(ReplaceParamTypeRector::class, [
+                    'x' => 1,
+                ])],
+        );
+
+        self::assertStringContainsString(
+            "    \$rectorConfig->paths([\n        'a.php',\n        'b.php',\n    ]);",
+            $config,
+        );
+    }
+
+    public function testRejectsEmptyPaths(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        (new DslConfigAssembler())->assemble(
+            [],
+            [
+                new CompiledRule(ReplaceParamTypeRector::class, [
+                    'x' => 1,
+                ])],
+        );
+    }
+
     public function testRejectsEmptyRules(): void
     {
         $this->expectException(InvalidArgumentException::class);
