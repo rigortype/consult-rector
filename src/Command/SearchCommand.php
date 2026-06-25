@@ -20,18 +20,17 @@ final class SearchCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('keyword', InputArgument::REQUIRED, 'Keyword to search Rector rules for')
+            ->addArgument('keyword', InputArgument::REQUIRED | InputArgument::IS_ARRAY, 'One or more keywords; a rule must match every keyword (AND)')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Emit machine-readable JSON for AI consumption');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /** @var string $keyword */
-        $keyword = $input->getArgument('keyword');
+        $keywords = $this->resolveKeywords($input);
         $errorStyle = (new SymfonyStyle($input, $output))->getErrorStyle();
 
         try {
-            $rules = RuleCatalog::fromInstalledRector()->search($keyword);
+            $rules = RuleCatalog::fromInstalledRector()->search(...$keywords);
         } catch (Throwable $exception) {
             $errorStyle->error($exception->getMessage());
 
@@ -40,7 +39,7 @@ final class SearchCommand extends Command
 
         if ($input->getOption('json') === true) {
             $output->writeln(json_encode([
-                'keyword' => $keyword,
+                'keywords' => $keywords,
                 'count' => count($rules),
                 'rules' => $rules,
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
@@ -51,8 +50,28 @@ final class SearchCommand extends Command
         foreach ($rules as $rule) {
             $output->writeln($rule);
         }
-        $errorStyle->note(sprintf('%d rule(s) match "%s".', count($rules), $keyword));
+        $errorStyle->note(sprintf('%d rule(s) match "%s".', count($rules), implode(' ', $keywords)));
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function resolveKeywords(InputInterface $input): array
+    {
+        $keywords = $input->getArgument('keyword');
+        if (! is_array($keywords)) {
+            return [];
+        }
+
+        $list = [];
+        foreach ($keywords as $keyword) {
+            if (is_string($keyword)) {
+                $list[] = $keyword;
+            }
+        }
+
+        return $list;
     }
 }

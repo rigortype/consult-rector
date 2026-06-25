@@ -38,15 +38,26 @@ final class RuleCatalog
     }
 
     /**
+     * Keyword search over the catalogue. Multiple keywords narrow the result: a
+     * rule matches only when its FQCN contains every (case-insensitive) keyword, so
+     * `search('trait', 'rename')` finds rules mentioning both. Empty/whitespace
+     * keywords are ignored; with no effective keyword, every rule matches.
+     *
      * @return list<string> matching rule FQCNs, sorted
      */
-    public function search(string $keyword): array
+    public function search(string ...$keywords): array
     {
-        $keyword = trim($keyword);
+        $needles = [];
+        foreach ($keywords as $keyword) {
+            $keyword = trim($keyword);
+            if ($keyword !== '') {
+                $needles[] = $keyword;
+            }
+        }
 
         $matches = [];
         foreach ($this->allRules() as $fqcn) {
-            if ($keyword === '' || stripos($fqcn, $keyword) !== false) {
+            if ($this->matchesAll($fqcn, $needles)) {
                 $matches[] = $fqcn;
             }
         }
@@ -54,6 +65,20 @@ final class RuleCatalog
         sort($matches);
 
         return $matches;
+    }
+
+    /**
+     * @param list<string> $needles
+     */
+    private function matchesAll(string $fqcn, array $needles): bool
+    {
+        foreach ($needles as $needle) {
+            if (stripos($fqcn, $needle) === false) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

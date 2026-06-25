@@ -72,6 +72,40 @@ final class RuleCatalogTest extends TestCase
         }
     }
 
+    /**
+     * Multiple keywords AND-narrow: every keyword must appear in the FQCN. The
+     * intersection is a strict subset of either keyword alone, and each survivor
+     * contains both needles (case-insensitively).
+     */
+    public function testMultipleKeywordsNarrowWithAndSemantics(): void
+    {
+        $catalog = RuleCatalog::fromInstalledRector();
+
+        $both = $catalog->search('Closure', 'ArrowFunction');
+
+        self::assertContains('Rector\Php74\Rector\Closure\ClosureToArrowFunctionRector', $both);
+        self::assertLessThanOrEqual(count($catalog->search('Closure')), count($both));
+        foreach ($both as $rule) {
+            self::assertStringContainsStringIgnoringCase('Closure', $rule);
+            self::assertStringContainsStringIgnoringCase('ArrowFunction', $rule);
+        }
+    }
+
+    /**
+     * Empty/whitespace keywords are ignored, so an effective keyword still filters
+     * even when padded with blank extras — and all-blank keywords match everything.
+     */
+    public function testBlankKeywordsAreIgnoredAmongRealOnes(): void
+    {
+        $catalog = RuleCatalog::fromInstalledRector();
+
+        self::assertSame(
+            $catalog->search('ClosureToArrowFunction'),
+            $catalog->search('', 'ClosureToArrowFunction', '   '),
+        );
+        self::assertSame($catalog->search(''), $catalog->search('  ', ''));
+    }
+
     public function testUnknownKeywordYieldsNoRules(): void
     {
         self::assertSame([], RuleCatalog::fromInstalledRector()->search('NoSuchRuleXyzzy'));
