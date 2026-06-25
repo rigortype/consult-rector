@@ -18,6 +18,18 @@
         "configDir": "build",
         "customPath": ".vendor-bin/phpunit/vendor/bin/phpunit"
     },
+    // Run PHPStan (max + bleedingEdge + strict-rules, via the root phpstan.neon.dist)
+    // on each ESCAPED mutant: a mutation that produces type-invalid / unreachable code
+    // is "killed by static analysis", catching the defensive subprocess-parsing guards
+    // that the test suite cannot reach. PHPStan lives in its own bamarni bin namespace.
+    "staticAnalysisTool": "phpstan",
+    "phpStan": {
+        "configDir": ".",
+        "customPath": ".vendor-bin/phpstan/vendor/bin/phpstan"
+    },
+    // Infection invokes PHPStan without its usual auto memory bump, so lift the
+    // limit explicitly (max + bleedingEdge + strict-rules over src + tests).
+    "staticAnalysisToolOptions": "--memory-limit=-1",
     "minMsi": 90,
     "minCoveredMsi": 95,
     "logs": {
