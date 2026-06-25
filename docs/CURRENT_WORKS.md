@@ -9,8 +9,10 @@ consult-rector went from design-docs-only to a working tool this session (27 com
 - **6 CLI commands**: `search`, `dry-run`, `apply`, `ast`, `doc`, `phpstan`.
 - **8 AST DSL transforms** (7 declaration + 1 usage-site — see below).
 - **MCP server** boots; `tools/list` advertises 7 `rector_*` tools.
-- **Gates**: PHPStan max + bleedingEdge + strict-rules, ECS, strict PHPUnit — **74 tests, 691 assertions, all green**.
+- **Gates**: PHPStan max + bleedingEdge + strict-rules, ECS, strict PHPUnit — **133 tests, 831 assertions, all green**.
 - **SKILL.md** brushed up to waza/agentskills compliance (High, 9/9 spec, 497/500 tokens, quality 4.6/5).
+- **CI** (`.github/workflows/`): main CI (PHPStan+ECS on 8.5; PHPUnit matrix 8.2–8.5 × lock/update/prefer-lowest), weekly Infection (PHPStan-as-static-analysis, **~93% MSI**, gate green), and a non-blocking waza eval draft.
+- **Eval suite** (`evals/consult-rector/`): waza trigger suite, 5 positive / 5 negative.
 
 ## How to work (verify any change)
 
@@ -62,7 +64,14 @@ Registered **per method** via `addTool([RectorTools::class, $method], $name, $de
 - **`--with-config` merge** — deferred **by decision** (the user judged re-running the rector command by hand is fine for v1). Intentionally omitted, not unbuilt.
 - **eval suite for the skill** — **done.** `evals/consult-rector/` holds a waza trigger suite: 5 positive tasks (one per USE-FOR clause: closure→fn, type decls, arg→enum + propagate, version upgrade, PSR-4) and 5 negative tasks (one per DO-NOT clause + a boundary guard against the sibling `phpstan-error-reduction` skill). Modeled on the user's own phpstan/acp evals: realistic JP/EN prompts + `expected.should_trigger`, eval-level `token-budget` behavior grader, executor `gpt-5-mini`. `waza check` now reports `eval.found: true` and `schema.valid: true`. Run with `waza run consult-rector` (needs the copilot-sdk executor / model access). Note: `waza check`'s overall `ready` stays false only because its link scanner walks `vendor/`/`.vendor-bin/` (gitignored) third-party changelogs — repo-wide noise, unrelated to the skill.
 - **`recipe-book.md`** — still the hand-curated placeholder; needs initial intent→rule content.
-- **Release prep** — README, CI workflows, and `composer.json` `description`/keywords are set but not yet validated against a real `composer install` from a clean checkout.
+- **Release prep** — `composer.json` `description`/`keywords`/`license` (MPL-2.0) set; CI workflows in place; the `bin/consult-rector` binary runs (all 6 commands, reports `0.1.0-dev`). **Gaps for a minimal release (verified 2026-06-25):**
+  - **README.md — absent.** Required for GitHub/Packagist. Top priority.
+  - **`composer.lock` drifted** — `composer validate --strict` flags it as out of date vs `composer.json` (description/keywords were added without re-locking). Regenerate.
+  - **`.gitattributes` — absent.** Add `export-ignore` for dev files (tests/, docs/, evals/, build/, .vendor-bin/, .github/, ecs.php, phpstan.neon.dist, infection.json5.dist, phpunit.xml.dist) so the dist tarball is lean.
+  - **`recipe-book.md`** — still a 7-line placeholder; the SKILL lists it as rule-selection priority #2. Content gap (not a hard blocker).
+  - **No version tag** — binary reports `0.1.0-dev`; tag `v0.1.0` when ready. `composer.json` has no `version` field (intentional; tags drive it).
+  - **Clean-install + CI not yet validated on a real runner** — workflows can't run in this environment.
+  - **CHANGELOG.md — absent** (nice-to-have for v1).
   - **Main CI** (`.github/workflows/ci.yml`) — blocking on push to master + PR. `static` job: PHPStan + ECS on PHP 8.5. `tests` job: 9-leg PHPUnit matrix — PHP 8.5 from `composer.lock`, plus PHP 8.2–8.5 × {`composer update`, `update --prefer-lowest`}. Root deps resolved with `--no-plugins` so bamarni doesn't forward `--prefer-lowest` to the bin tools; PHPUnit is (re)installed via `composer bin phpunit` so the runner version is decided per-PHP, immune to prefer-lowest.
   - **PHPUnit pin relaxed** to `^11 || ^12 || ^13` (`.vendor-bin/phpunit/composer.json`) so the bin plugin resolves 8.2→11, 8.3→12, 8.4/8.5→13. PHPUnit 13 needs PHP ≥8.4.1, so the old `^13` pin couldn't test 8.2/8.3. Suite verified green on 11/12/13 (incl. `failOnWarning`). Local dev + the lock leg stay on 13.
   - **Weekly Infection** (`.github/workflows/infection.yml`) — schedule + manual, pcov, non-blocking by design. Making it run required fixing latent issues: (a) `phpunit.xml.dist` `xsi:noNamespaceSchemaLocation` pointed at the nonexistent root `vendor/phpunit/...xsd` → repointed to the bamarni path; (b) a **relaxed coverage config** `build/phpunit.xml.dist` (ADR-0006's "separate relaxed config" — drops `failOnRisky`/`beStrictAboutCoverageMetadata`, pins `executionOrder="default"` since Infection's random order tripped the E2E rector tests); (c) `infection.json5.dist` sets `phpUnit.configDir: build`, `phpUnit.customPath` (bin phpunit), and root `bootstrap`.
