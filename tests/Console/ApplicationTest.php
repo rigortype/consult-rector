@@ -15,7 +15,7 @@ final class ApplicationTest extends TestCase
     {
         $application = new Application();
 
-        foreach (['search', 'dry-run', 'apply', 'ast', 'doc'] as $name) {
+        foreach (['search', 'dry-run', 'apply', 'ast', 'doc', 'phpstan'] as $name) {
             self::assertTrue($application->has($name), "missing command: {$name}");
         }
     }

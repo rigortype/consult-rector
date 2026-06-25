@@ -9,6 +9,7 @@ use TypedDuck\ConsultRector\Command\ApplyCommand;
 use TypedDuck\ConsultRector\Command\AstCommand;
 use TypedDuck\ConsultRector\Command\DocCommand;
 use TypedDuck\ConsultRector\Command\DryRunCommand;
+use TypedDuck\ConsultRector\Command\PhpStanCommand;
 use TypedDuck\ConsultRector\Command\SearchCommand;
 
 /**
@@ -34,6 +35,7 @@ final class Application extends BaseApplication
             new ApplyCommand(),
             new AstCommand(),
             new DocCommand(),
+            new PhpStanCommand(),
         ]);
     }
 }
