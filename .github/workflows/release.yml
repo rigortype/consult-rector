@@ -27,6 +27,7 @@ jobs:
             awk -v v="$version" '
               index($0, "## [" v "]") == 1 { f = 1; next }
               f && index($0, "## [") == 1 { exit }
+              f && $0 ~ /^\[[^]]+\]: / { exit }
               f { print }
             ' CHANGELOG.md > release-notes.md
           fi
