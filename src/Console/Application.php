@@ -23,7 +23,7 @@ final class Application extends BaseApplication
 {
     public const NAME = 'consult-rector';
 
-    public const VERSION = '0.1.0-dev';
+    public const VERSION = '0.0.1';
 
     public function __construct()
     {
