@@ -48,6 +48,10 @@ final class Runner
      */
     public function runConfig(string $config, bool $dryRun): RunResult
     {
+        // Assembled configs pin `containerCacheDirectory` here; Rector fatals on a
+        // missing directory rather than creating it, so make sure it exists first.
+        ContainerCache::ensureDirectory();
+
         $configFile = $this->writeTempConfig($config);
 
         try {
@@ -151,6 +155,14 @@ final class Runner
             $detail = trim($stderr) !== '' ? trim($stderr) : trim($stdout);
 
             throw new RuntimeException(sprintf('Rector did not return JSON (exit %d). %s', $exit, $detail));
+        }
+
+        // Rector reports unrecoverable failures (e.g. a bad cache directory) under
+        // `fatal_errors` while still emitting valid JSON. Surface them instead of
+        // letting a missing `totals` masquerade as a successful `changed_files: 0`.
+        $fatalErrors = $this->errorMessages($decoded['fatal_errors'] ?? null);
+        if ($fatalErrors !== []) {
+            throw new RuntimeException(sprintf('Rector failed (exit %d): %s', $exit, implode('; ', $fatalErrors)));
         }
 
         $totals = isset($decoded['totals']) && is_array($decoded['totals']) ? $decoded['totals'] : [];

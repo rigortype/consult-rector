@@ -9,11 +9,13 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use TypedDuck\ConsultRector\Dsl\CompiledRule;
+use TypedDuck\ConsultRector\Rector\ContainerCache;
 use TypedDuck\ConsultRector\Rector\DslConfigAssembler;
 use TypedDuck\ConsultRector\Rector\Rule\ReplaceParamTypeRector;
 
 #[CoversClass(DslConfigAssembler::class)]
 #[UsesClass(CompiledRule::class)]
+#[UsesClass(ContainerCache::class)]
 final class DslConfigAssemblerTest extends TestCase
 {
     public function testGroupsSpecsByRuleIntoParseableConfig(): void
@@ -66,6 +68,46 @@ final class DslConfigAssemblerTest extends TestCase
 
         self::assertStringContainsString(
             "    \$rectorConfig->paths([\n        'a.php',\n        'b.php',\n    ]);",
+            $config,
+        );
+    }
+
+    /**
+     * The DSL config also routes the skip cache to a per-user directory keyed by the
+     * run signature, for the same reason as {@see ConfigAssemblerTest}: off Rector's
+     * shared default, and isolated per rule set so stale skips can't hide changes.
+     */
+    public function testIsolatesSkipCacheByRunSignature(): void
+    {
+        $config = (new DslConfigAssembler())->assemble(
+            ['src'],
+            [
+                new CompiledRule(ReplaceParamTypeRector::class, [
+                    'x' => 1,
+                ])],
+        );
+
+        self::assertStringContainsString('$rectorConfig->cacheDirectory(', $config);
+        self::assertStringContainsString(ContainerCache::directory() . DIRECTORY_SEPARATOR . 'skip-', $config);
+        self::assertStringNotContainsString('MemoryCacheStorage', $config);
+    }
+
+    /**
+     * ...while the content-addressed container/PHPStan cache is persisted to the
+     * same stable per-user directory used by the rule-driven path.
+     */
+    public function testRoutesContainerCacheToStablePerUserDirectory(): void
+    {
+        $config = (new DslConfigAssembler())->assemble(
+            ['src'],
+            [
+                new CompiledRule(ReplaceParamTypeRector::class, [
+                    'x' => 1,
+                ])],
+        );
+
+        self::assertStringContainsString(
+            '$rectorConfig->containerCacheDirectory(' . var_export(ContainerCache::directory(), true) . ');',
             $config,
         );
     }

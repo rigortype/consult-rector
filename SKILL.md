@@ -12,7 +12,7 @@ Interactive PHP refactoring wrapping Rector and PHP-Parser: edits are AST transf
 ## Workflow
 
 1. Pick an approach: an existing Rector rule (search), a multi-rule recipe, or a custom AST DSL op.
-2. `dry-run` → review the diff → user approves → `apply`.
+2. `dry-run` → review the diff → user approves → `apply` → run the project's own formatter/coding-standard fixer (Rector's output style may differ from the project's, e.g. `fn()` vs `fn ()`).
 3. For a breaking change, propagate to call sites then `--verify` (PHPStan flags missed sites; see `docs/adr/0004-*`).
 
 Clarify vague requests before acting; prefer Rector UPGRADE sets for version bumps.
@@ -26,7 +26,7 @@ Clarify vague requests before acting; prefer Rector UPGRADE sets for version bum
 
 ## Commands
 
-`search` · `dry-run`/`apply <path> --rules=FQCN` · `ast <path> '<dsl-json>'` (`--apply`, `--verify`) · `doc index|section` · `phpstan [--baseline]`. Add `--json` for machine output; full reference in `CONTEXT.md`.
+`search <keyword…>` (space-separated keywords AND-narrow) · `dry-run`/`apply <path> --rules=FQCN` · `ast <path> '<dsl-json>'` (`--apply`, `--verify`) · `doc index|section` · `phpstan [--baseline]`. Add `--json` for machine output; full reference in `CONTEXT.md`.
 
 ## Example
 
@@ -36,7 +36,7 @@ consult-rector dry-run src/Order.php --rules=Rector\...\ClosureToArrowFunctionRe
 
 ## Troubleshooting
 
-No rule fits → write a custom `ast` op. Over-eager Rector → narrow the rule set, re-`dry-run`. Type errors after a breaking change → `apply --verify` lists the unmigrated sites.
+No rule fits → write a custom `ast` op. Over-eager Rector → narrow the rule set, re-`dry-run`. Type errors after a breaking change → `apply --verify` lists the unmigrated sites. Unexpected `changed_files: 0` → suspect rule/path mismatch, not the environment: the CLI isolates Rector's caches in a per-user, run-signature-keyed directory, so no shared/foreign `rector_cached_files` tree can swallow changes or skip files as "unchanged".
 
 ## References
 
