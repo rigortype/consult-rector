@@ -1,0 +1,84 @@
+name: CI
+
+# Main CI per ADR-0006: PHPStan + ECS (PHP 8.5 only) and a PHPUnit matrix
+# across PHP 8.2–8.5. Blocking on push to master and on pull requests.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: PHPStan + ECS (PHP 8.5)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          coverage: none
+          tools: composer:v2
+      # Plain install: bamarni forward-command also installs the .vendor-bin
+      # tools (phpstan, ecs, phpunit) from their locks. phpstan.neon.dist
+      # bootstraps the phpunit bin autoloader to analyse tests/.
+      - name: Install dependencies (root + bin tools)
+        run: composer install --no-interaction --no-progress
+      - name: PHPStan
+        run: composer phpstan
+      - name: ECS
+        run: composer ecs
+
+  tests:
+    name: PHPUnit (PHP ${{ matrix.php }}, ${{ matrix.deps }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.2", "8.3", "8.4", "8.5"]
+        deps: [update, update-lowest]
+        include:
+          # Locked dependencies are pinned to the supported runtime (PHP 8.5).
+          - php: "8.5"
+            deps: lock
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+
+      # Resolve the root (library) dependencies. --no-plugins stops the bamarni
+      # plugin from forwarding the operation — and crucially --prefer-lowest — to
+      # the isolated bin tools, so the PHPUnit version is decided below, not here.
+      - name: Install root deps (composer.lock)
+        if: matrix.deps == 'lock'
+        run: composer install --no-interaction --no-progress --no-plugins
+      - name: Update root deps (highest)
+        if: matrix.deps == 'update'
+        run: composer update --no-interaction --no-progress --no-plugins
+      - name: Update root deps (lowest)
+        if: matrix.deps == 'update-lowest'
+        run: composer update --no-interaction --no-progress --no-plugins --prefer-lowest
+
+      # PHPUnit comes from the bamarni bin plugin. Its constraint is
+      # "^11 || ^12 || ^13", so a normal (highest) resolve picks a version that
+      # matches the running PHP — 8.2→11, 8.3→12, 8.4/8.5→13 — and --prefer-lowest
+      # above never touches it.
+      - name: Install PHPUnit (bin lock)
+        if: matrix.deps == 'lock'
+        run: composer bin phpunit install --no-interaction --no-progress
+      - name: Install PHPUnit (resolve for this PHP)
+        if: matrix.deps != 'lock'
+        run: composer bin phpunit update --no-interaction --no-progress
+
+      - name: PHPUnit
+        run: .vendor-bin/phpunit/vendor/bin/phpunit

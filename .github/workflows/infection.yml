@@ -1,0 +1,37 @@
+name: Infection
+
+# Weekly mutation testing per ADR-0006: scheduled + manual dispatch, never a
+# blocking PR check. Uses pcov for coverage and the relaxed build/phpunit.xml.dist
+# config (wired in infection.json5.dist). The run fails if MSI drops below the
+# minMsi / minCoveredMsi gates in infection.json5.dist.
+
+on:
+  schedule:
+    - cron: "0 3 * * 1" # Mondays 03:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infection-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  infection:
+    name: Mutation testing (PHP 8.5)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          coverage: pcov
+          tools: composer:v2
+      # Plain install: bamarni forward-command installs the .vendor-bin tools
+      # (infection + phpunit) from their locks alongside the root deps.
+      - name: Install dependencies (root + bin tools)
+        run: composer install --no-interaction --no-progress
+      - name: Infection
+        run: composer infection -- --threads=max --no-progress
