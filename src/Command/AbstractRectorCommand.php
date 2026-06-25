@@ -20,6 +20,8 @@ use TypedDuck\ConsultRector\Rector\RunResult;
  */
 abstract class AbstractRectorCommand extends Command
 {
+    use PhpStanVerification;
+
     protected function configure(): void
     {
         $this
