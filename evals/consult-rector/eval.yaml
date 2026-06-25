@@ -1,0 +1,30 @@
+name: consult-rector-eval
+description: >-
+  Trigger/anti-trigger suite for the consult-rector skill. Positive tasks cover
+  each USE-FOR clause (closure→fn, type declarations, arg→enum + propagate,
+  version upgrade, PSR-4); negative tasks cover each DO-NOT clause plus the
+  boundary against the phpstan-error-reduction skill.
+skill: consult-rector
+version: "1.0"
+config:
+  trials_per_task: 1
+  timeout_seconds: 300
+  parallel: false
+  executor: copilot-sdk
+  model: gpt-5-mini
+metrics:
+  - name: task_completion
+    weight: 0.7
+    threshold: 0.8
+    description: Did the skill complete trigger and anti-trigger checks?
+  - name: efficiency
+    weight: 0.3
+    threshold: 0.7
+    description: Did the skill stay within behavior limits?
+graders:
+  - type: behavior
+    name: token-budget
+    config:
+      max_tokens: 1200
+tasks:
+  - "tasks/*.yaml"

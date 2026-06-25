@@ -1,0 +1,8 @@
+id: negative-trigger-003
+name: Code review / explain a PHP warning (no transform requested)
+description: Review and explanation, not a refactor; must NOT trigger.
+tags: [negative-trigger]
+inputs:
+  prompt: "この PHP のメソッド、なんで 'undefined variable' の警告が出るのか教えて。ついでにコードレビューして気になる点を指摘して。"
+expected:
+  should_trigger: false

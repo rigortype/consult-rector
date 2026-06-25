@@ -1,0 +1,8 @@
+id: positive-trigger-003
+name: Migrate a stringly-typed status arg to an enum and fix call sites
+description: ADR-0004 flagship — change the declaration, then propagate call-site literals to enum cases and verify.
+tags: [positive-trigger]
+inputs:
+  prompt: "Order::setStatus(string $status) の引数を新しい Status enum に変えて、呼び出し側で渡してる 'paid' や 'shipped' みたいな文字列リテラルも対応する enum ケースに全部置き換えたい。直し漏れがないか最後に確認もしたい。"
+expected:
+  should_trigger: true

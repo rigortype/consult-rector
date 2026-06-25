@@ -1,0 +1,8 @@
+id: positive-trigger-004
+name: Bulk-upgrade legacy PHP to a newer language level
+description: Maps to the 'apply ... version upgrades' USE-FOR clause; Rector UPGRADE set (SKILL prefers upgrade sets for version bumps).
+tags: [positive-trigger]
+inputs:
+  prompt: "この PHP 7.4 のレガシーなコードベースを 8.2 相当の書き方に一括でアップグレードしたい。Rector のアップグレードセットでまとめてやれる?"
+expected:
+  should_trigger: true

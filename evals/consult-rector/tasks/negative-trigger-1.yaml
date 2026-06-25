@@ -1,0 +1,8 @@
+id: negative-trigger-001
+name: Convert callbacks to arrow functions in TypeScript (wrong language)
+description: Same closure→arrow operation as positive-001 but TypeScript, not PHP; must NOT trigger.
+tags: [negative-trigger]
+inputs:
+  prompt: "この TypeScript のファイルのコールバック関数を全部アロー関数にリファクタして整理したい。"
+expected:
+  should_trigger: false

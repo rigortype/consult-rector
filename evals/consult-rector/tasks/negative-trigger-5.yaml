@@ -1,0 +1,11 @@
+id: negative-trigger-005
+name: Make PHPStan pass by typing mixed properly (phpstan-error-reduction's domain)
+description: >-
+  Boundary guard vs the sibling phpstan-error-reduction skill. Narrowing `mixed`
+  to satisfy static analysis is semantic typing work owned by that skill, not a
+  mechanical Rector/AST declaration transform; must NOT trigger.
+tags: [negative-trigger]
+inputs:
+  prompt: "phpstan max が mixed だらけだって怒ってる。キャストや @var で抑えるんじゃなくて、型をちゃんと直して analyse を通したい。"
+expected:
+  should_trigger: false

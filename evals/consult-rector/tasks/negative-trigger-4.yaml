@@ -1,0 +1,8 @@
+id: negative-trigger-004
+name: Tidy up frontend and CI config files (not PHP)
+description: Frontend component plus config files — outside the skill's domain; must NOT trigger.
+tags: [negative-trigger]
+inputs:
+  prompt: "Vue のコンポーネントと GitHub Actions の yaml を整理して、設定やプロパティの順番を直したい。"
+expected:
+  should_trigger: false

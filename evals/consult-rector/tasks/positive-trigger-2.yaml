@@ -1,0 +1,8 @@
+id: positive-trigger-002
+name: Add param and return type declarations mechanically
+description: Maps to the 'add or change type declarations' USE-FOR clause; Rector declaration transform / ast DSL.
+tags: [positive-trigger]
+inputs:
+  prompt: "OrderService のメソッド群、引数と戻り値の型宣言が抜けてるところが多い。手で書くんじゃなくて Rector とかで機械的に型を付けて回りたい。"
+expected:
+  should_trigger: true

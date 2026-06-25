@@ -1,0 +1,8 @@
+id: negative-trigger-002
+name: Write a new PHP class from scratch
+description: Generating new PHP, not transforming existing AST; must NOT trigger.
+tags: [negative-trigger]
+inputs:
+  prompt: "Stripe を叩いて決済するサービスクラスを PHP で一から新しく書いてほしい。"
+expected:
+  should_trigger: false

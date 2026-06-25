@@ -3,4 +3,5 @@
 /.phpunit.cache/
 /.phpunit.result.cache
 /infection.log
+/.waza-cache/
 .DS_Store

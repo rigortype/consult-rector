@@ -1,0 +1,8 @@
+id: positive-trigger-005
+name: Align namespaces to PSR-4 file layout
+description: Maps to the 'apply PSR-4 ...' USE-FOR clause; Rector PSR-4 / namespace transform.
+tags: [positive-trigger]
+inputs:
+  prompt: "クラスの名前空間とファイルの置き場所が PSR-4 とずれていて autoload が効かない。namespace をディレクトリ構成に合わせて PSR-4 準拠に一括で直したい。"
+expected:
+  should_trigger: true
