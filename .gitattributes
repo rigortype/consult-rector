@@ -1,6 +1,7 @@
 # Keep the Composer dist tarball lean: exclude dev-only paths from the package
 # downloaded by `composer require`. Runtime needs src/, bin/, references/ (the
 # `doc` command reads them), composer.json and LICENSE — those stay.
+/.claude/             export-ignore
 /.github/             export-ignore
 /.vendor-bin/         export-ignore
 /build/               export-ignore
