@@ -1,0 +1,51 @@
+name: Release
+
+# Tag-driven release: pushing a `vX.Y.Z` tag (after the release PR merges to
+# master) creates the GitHub Release from the matching CHANGELOG.md section.
+# Packagist publishes the version independently via its GitHub hook on the tag.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # create the GitHub Release
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract the CHANGELOG section for this tag
+        id: notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [ -f CHANGELOG.md ]; then
+            awk -v v="$version" '
+              index($0, "## [" v "]") == 1 { f = 1; next }
+              f && index($0, "## [") == 1 { exit }
+              f { print }
+            ' CHANGELOG.md > release-notes.md
+          fi
+          if [ -s release-notes.md ]; then
+            echo "have_notes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have_notes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create the Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.ref_name }}
+          HAVE_NOTES: ${{ steps.notes.outputs.have_notes }}
+        run: |
+          title="${VERSION#v}"
+          if [ "$HAVE_NOTES" = "true" ]; then
+            gh release create "$VERSION" --title "$title" --notes-file release-notes.md
+          else
+            # No matching CHANGELOG section — fall back to auto-generated notes.
+            gh release create "$VERSION" --title "$title" --generate-notes
+          fi

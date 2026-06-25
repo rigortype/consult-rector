@@ -167,28 +167,41 @@ Bump up version to x.y.z
 
 If the user asks for separate commits, keep the version bump as the final commit.
 
-## Open the release PR and merge on green
+## Open the release PR and auto-merge on green
 
-Land the release on `master` through a CI-gated PR, not a direct push:
+Land the release on `master` through a CI-gated PR, not a direct push. Hand the
+merge to GitHub with `--auto` so it merges the moment `ci.yml` passes — no
+waiting at the terminal:
 
 ```sh
 git push -u origin release/x.y.z
 gh pr create --base master --head release/x.y.z \
   --title "Bump up version to x.y.z" --body "<short release summary>"
-gh pr checks <pr> --watch        # wait for the required ci.yml matrix
-gh pr merge <pr> --rebase --delete-branch
+gh pr merge --auto --rebase --delete-branch
 ```
 
-- Merge once `ci.yml` is green. Keep the `Bump up version to x.y.z` commit intact
-  (**rebase / merge, never squash**) so the tag lands on it.
-- The PR merge **is** the merge-back to `master`; publish runs from `master`
-  afterward, so there is no separate merge-back step.
+`--auto` requires, one-time on the repo:
 
-## Publish
+- **Settings → General → "Allow auto-merge"** enabled.
+- A **branch-protection rule on `master`** marking the `ci.yml` jobs (`static`
+  and the `tests` matrix) as **required status checks** — otherwise there is
+  nothing to wait on and the PR merges immediately.
 
-A Composer package publishes by **tagging** — Packagist reads the git tag, there
-is no artifact to build or push. From an up-to-date `master` with the release
-commit at `HEAD`:
+Fallback when auto-merge is not enabled — poll, then merge:
+
+```sh
+gh pr checks <pr> --watch && gh pr merge <pr> --rebase --delete-branch
+```
+
+Keep the `Bump up version to x.y.z` commit intact (**rebase / merge, never
+squash**) so the tag lands on it. The PR merge **is** the merge-back to
+`master`; publishing runs from `master` afterward.
+
+## Publish — push the tag, CI creates the Release
+
+Publishing is **tag-driven**: a Composer package has no artifact to push, and
+pushing the tag triggers the release automation. From an up-to-date `master`
+once the PR has merged:
 
 ```sh
 git switch master && git pull
@@ -196,25 +209,32 @@ git tag -a vx.y.z -m "consult-rector x.y.z"
 git push origin vx.y.z
 ```
 
-Then:
+Pushing the tag fans out automatically:
 
-- **Packagist** — if the repo's Packagist hook (or GitHub App) is configured, the
-  new version appears within a minute or two. Otherwise update it manually at
-  `https://packagist.org/packages/typedduck/consult-rector`, or **submit** the
-  package there on the first ever release. This is the one step that must happen
-  outside the repo.
-- **GitHub Release** — create one from the tag with the changelog section as the
-  body:
+- **[`.github/workflows/release.yml`](../../../.github/workflows/release.yml)**
+  (triggered on `v*` tags) creates the **GitHub Release**, using the `## [x.y.z]`
+  section of `CHANGELOG.md` as the body (falling back to auto-generated notes if
+  the section is missing).
+- **Packagist** picks up the tag via its GitHub hook and publishes the version
+  within a minute or two. On the **first ever release**, submit the package once
+  at `https://packagist.org/packages/typedduck/consult-rector` (and enable the
+  GitHub hook / Packagist GitHub App) — this is the one step outside the repo.
 
-  ```sh
-  gh release create vx.y.z --title "x.y.z" \
-    --notes "<the ## [x.y.z] section from CHANGELOG.md>"
-  ```
+`ci.yml` does **not** re-run on the tag (it triggers on branch pushes / PRs, not
+tags); the tag is already on CI-green `master`, so `release.yml` just publishes.
 
-Once Packagist has the version, confirm a consumer can install it:
+Confirm afterward:
 
 ```sh
-composer require --dev typedduck/consult-rector:^x.y.z   # from a scratch project
+gh release view vx.y.z                                   # the Release exists with the changelog body
+composer require --dev typedduck/consult-rector:^x.y.z   # resolves from a scratch project
+```
+
+If `release.yml` fails transiently, the tag is already public — create the
+Release by hand without re-tagging:
+
+```sh
+gh release create vx.y.z --title "x.y.z" --notes-file CHANGELOG-section.md
 ```
 
 ## Quick checklist
@@ -237,5 +257,8 @@ composer require --dev typedduck/consult-rector:^x.y.z   # from a scratch projec
   separately.
 - The final commit is `Bump up version to x.y.z`; release work happened on a
   `release/x.y.z` branch (not directly on `master`).
-- After publish: the `vx.y.z` tag is pushed, Packagist shows the version, the
-  GitHub Release exists, and `composer require` resolves it.
+- The PR merged to `master` on a green `ci.yml` (auto-merge or the watch+merge
+  fallback), keeping the version-bump commit intact (rebase / merge, not squash).
+- After publish: the `vx.y.z` tag is pushed, `release.yml` created the GitHub
+  Release from the changelog section, Packagist shows the version, and `composer
+  require --dev typedduck/consult-rector:^x.y.z` resolves it.
