@@ -55,12 +55,43 @@ final class PhpStanCommandTest extends TestCase
 
         $tester->assertCommandIsSuccessful();
 
-        $payload = json_decode($tester->getDisplay(), true);
+        $display = $tester->getDisplay();
+        // JSON flags: pretty-printed (newlines) with unescaped slashes in the file paths.
+        self::assertStringContainsString("\n", $display);
+        self::assertStringNotContainsString('\\/', $display);
+
+        $payload = json_decode($display, true);
         self::assertIsArray($payload);
         self::assertSame('absolute', $payload['mode'] ?? null);
 
         $errors = $payload['errors'] ?? null;
         self::assertIsArray($errors);
         self::assertNotSame([], $errors);
+    }
+
+    public function testReportsDeltaModeWhenGivenABaseline(): void
+    {
+        $file = $this->workspace . '/bad.php';
+        file_put_contents($file, "<?php\n\nfunction f(): int\n{\n    return 'x';\n}\n");
+        $config = $this->workspace . '/phpstan.neon';
+        file_put_contents($config, "parameters:\n    level: 4\n");
+        $baseline = $this->workspace . '/baseline.json';
+        file_put_contents($baseline, '{"errors": []}');
+
+        $tester = new CommandTester((new Application())->find('phpstan'));
+        $tester->execute([
+            'paths' => [$file],
+            '--configuration' => $config,
+            '--baseline' => $baseline,
+            '--json' => true,
+        ]);
+
+        $tester->assertCommandIsSuccessful();
+
+        $payload = json_decode($tester->getDisplay(), true);
+        self::assertIsArray($payload);
+        // A non-empty --baseline takes the delta branch (not 'absolute').
+        self::assertSame('delta', $payload['mode'] ?? null);
+        self::assertArrayHasKey('current_count', $payload);
     }
 }

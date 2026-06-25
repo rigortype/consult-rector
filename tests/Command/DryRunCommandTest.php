@@ -63,6 +63,9 @@ final class DryRunCommandTest extends TestCase
         $totals = $payload['totals'] ?? null;
         self::assertIsArray($totals);
         self::assertSame(1, $totals['changed_files'] ?? null);
+
+        // dry-run must NOT rewrite the file (apply would): the closure survives.
+        self::assertStringContainsString('function (', (string) file_get_contents($fixture));
     }
 
     public function testFailsWhenNeitherRulesNorConfigAreGiven(): void
