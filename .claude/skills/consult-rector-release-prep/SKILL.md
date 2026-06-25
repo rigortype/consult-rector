@@ -64,6 +64,10 @@ Treat the sealing as the work:
 
 - **One sentence per top-level bullet.** No em-dash run-ons; self-contained
   enough to understand without the body.
+- **One physical line per entry — do not hard-wrap.** Each bullet, each child
+  item, and the summary paragraph is a single unwrapped line; let the renderer
+  (GitHub, editors) wrap. The release notes `release.yml` derives from these
+  inherit the same no-wrap shape.
 - **Subsystem label prefix** matching the architecture: `**[cli]**`,
   `**[ast-dsl]**`, `**[mcp]**`, `**[skill]**`, `**[references]**`, `**[ci]**`.
 - **User-facing only.** Cut internal refactors, test/spec additions, coverage
