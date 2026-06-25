@@ -1,0 +1,19 @@
+# Keep the Composer dist tarball lean: exclude dev-only paths from the package
+# downloaded by `composer require`. Runtime needs src/, bin/, references/ (the
+# `doc` command reads them), composer.json and LICENSE — those stay.
+/.github/             export-ignore
+/.vendor-bin/         export-ignore
+/build/               export-ignore
+/docs/                export-ignore
+/evals/               export-ignore
+/tests/               export-ignore
+/tools/               export-ignore
+/AGENTS.md            export-ignore
+/.editorconfig        export-ignore
+/.gitattributes       export-ignore
+/.gitignore           export-ignore
+/.waza.yaml           export-ignore
+/ecs.php              export-ignore
+/infection.json5.dist export-ignore
+/phpstan.neon.dist    export-ignore
+/phpunit.xml.dist     export-ignore
