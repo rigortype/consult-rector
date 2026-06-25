@@ -49,15 +49,16 @@ Human (user) ←→ AI Agent ←→ consult-rector skill ←→ consult-rector C
 
 ## CLI concepts
 
-- **Rule query**: Search existing Rector rules by keyword
+- **Rule query**: Search existing Rector rules by keyword (multiple keywords AND-narrow: a rule must contain every keyword)
 - **Rule set**: Selected rules with config, assembled as temporary `rector.php`
+- **Cache policy**: assembled configs route *both* of Rector's caches to a per-user root (`sys_get_temp_dir()/consult-rector-cache-<uid>`, see `ContainerCache`) — off Rector's shared default, so no foreign-owned tree can make Rector fail or skip files (which otherwise surfaces as a baffling `changed_files: 0`). (1) The **container + embedded-PHPStan cache** (`containerCacheDirectory`) sits at that root; content-addressed (SHA-256 + version), it speeds Rector's bootstrap/type-resolution. (2) The **unchanged-files skip cache** (`cacheDirectory`) gets a subdirectory keyed by the run signature (`skip-<hash of paths + rules + Rector version>`): identical re-runs reuse it (skipping files already known clean — e.g. a 826-file dry-run drops from ~38 s to ~4 s on the second pass), while any different rule set lands elsewhere so a stale skip can never suppress another run's changes. The Runner creates the root before invoking Rector (Rector fatals on a missing `containerCacheDirectory`) and surfaces Rector's `fatal_errors` instead of mapping them to `changed_files: 0`. User-supplied configs (`--config`/`--with-config`) are run verbatim and keep their own cache settings.
 - **Recipe**: Multi-step procedure with ordered rule applications
 - **Custom rule**: PHP-Parser-based transformation generated ephemerally within a session
 
 ## CLI subcommands
 
 ```
-consult-rector search <keyword>                 # Rule search
+consult-rector search <keyword> [<keyword>...]   # Rule search (multiple keywords AND-narrow)
 consult-rector dry-run <file|dir> --rules=FQCN [...]  # Dry-run (--json for structured output)
 consult-rector apply <file|dir> --rules=FQCN [...]    # Apply rewrite
 consult-rector ast <file|dir> '<dsl-json>' [--apply]  # Custom AST DSL transformation (dry-run by default)

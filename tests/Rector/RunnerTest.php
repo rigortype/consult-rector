@@ -7,7 +7,9 @@ namespace TypedDuck\ConsultRector\Tests\Rector;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use TypedDuck\ConsultRector\Rector\ConfigAssembler;
+use TypedDuck\ConsultRector\Rector\ContainerCache;
 use TypedDuck\ConsultRector\Rector\FileChange;
 use TypedDuck\ConsultRector\Rector\Runner;
 use TypedDuck\ConsultRector\Rector\RunResult;
@@ -18,6 +20,7 @@ use TypedDuck\ConsultRector\Rector\RunResult;
  */
 #[CoversClass(Runner::class)]
 #[UsesClass(ConfigAssembler::class)]
+#[UsesClass(ContainerCache::class)]
 #[UsesClass(RunResult::class)]
 #[UsesClass(FileChange::class)]
 final class RunnerTest extends TestCase
@@ -68,6 +71,32 @@ final class RunnerTest extends TestCase
 
         self::assertSame(1, $result->changedFiles);
         self::assertStringContainsString('fn(', (string) file_get_contents($file));
+    }
+
+    /**
+     * A Rector fatal (here: a `containerCacheDirectory` that is a file, not a
+     * directory) arrives under `fatal_errors` in otherwise-valid JSON. It must
+     * raise, not be mapped to a misleading `changed_files: 0`.
+     */
+    public function testFatalErrorIsSurfacedRatherThanMaskedAsZeroChanges(): void
+    {
+        $file = $this->fixture();
+
+        $config = implode("\n", [
+            '<?php',
+            'declare(strict_types=1);',
+            'use Rector\Config\RectorConfig;',
+            'return RectorConfig::configure()',
+            '    ->withCache(containerCacheDirectory: ' . var_export($file, true) . ')',
+            '    ->withPaths([' . var_export($file, true) . '])',
+            '    ->withRules([\\' . self::RULE . '::class]);',
+            '',
+        ]);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessageMatches('/Rector failed/');
+
+        (new Runner())->runConfig($config, true);
     }
 
     private function fixture(): string

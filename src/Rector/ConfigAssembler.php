@@ -11,6 +11,14 @@ use InvalidArgumentException;
  * rule FQCNs plus the target paths, emitted as a standalone config that the CLI
  * hands to a Rector subprocess. Pure string assembly — actually running the
  * config is the Runner's job.
+ *
+ * Both of Rector's caches are routed to per-user directories ({@see
+ * ContainerCache}), off Rector's shared default where a foreign-owned
+ * `rector_cached_files`/`cache` tree could make Rector fail or skip files as
+ * "unchanged" (surfacing as a baffling `changed_files: 0`). The unchanged-files
+ * skip cache additionally gets a directory keyed by this run's signature (rules +
+ * paths), so an identical re-run skips the files it already knows are clean while
+ * a different rule set never reuses stale skip decisions.
  */
 final class ConfigAssembler
 {
@@ -38,6 +46,9 @@ final class ConfigAssembler
             $rules,
         ));
 
+        $skipCacheDirectory = var_export(ContainerCache::skipCacheDirectory([$paths, $rules]), true);
+        $containerCacheDirectory = var_export(ContainerCache::directory(), true);
+
         return implode("\n", [
             '<?php',
             '',
@@ -46,6 +57,7 @@ final class ConfigAssembler
             'use Rector\Config\RectorConfig;',
             '',
             'return RectorConfig::configure()',
+            '    ->withCache(cacheDirectory: ' . $skipCacheDirectory . ', containerCacheDirectory: ' . $containerCacheDirectory . ')',
             '    ->withPaths([',
             '        ' . $pathLiterals . ',',
             '    ])',

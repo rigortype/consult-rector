@@ -12,6 +12,12 @@ use TypedDuck\ConsultRector\Dsl\CompiledRule;
  * that sets the target paths and registers each shipped rule via
  * `ruleWithConfiguration()`. Specs for the same rule class are grouped into one
  * call, preserving first-seen order.
+ *
+ * Like {@see ConfigAssembler}, this routes both of Rector's caches to per-user
+ * directories ({@see ContainerCache}) — off Rector's shared default — and keys the
+ * unchanged-files skip cache by this run's signature (rule classes + specs +
+ * paths) so an identical re-run skips known-clean files while a different transform
+ * never reuses stale skip decisions.
  */
 final class DslConfigAssembler
 {
@@ -49,6 +55,8 @@ final class DslConfigAssembler
             );
         }
 
+        $skipCacheDirectory = var_export(ContainerCache::skipCacheDirectory([$paths, $grouped]), true);
+
         return implode("\n", [
             '<?php',
             '',
@@ -57,6 +65,8 @@ final class DslConfigAssembler
             'use Rector\Config\RectorConfig;',
             '',
             'return static function (RectorConfig $rectorConfig): void {',
+            '    $rectorConfig->cacheDirectory(' . $skipCacheDirectory . ');',
+            '    $rectorConfig->containerCacheDirectory(' . var_export(ContainerCache::directory(), true) . ');',
             '    $rectorConfig->paths([',
             '        ' . $pathLiterals . ',',
             '    ]);',

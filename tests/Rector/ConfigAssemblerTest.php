@@ -6,10 +6,13 @@ namespace TypedDuck\ConsultRector\Tests\Rector;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use TypedDuck\ConsultRector\Rector\ConfigAssembler;
+use TypedDuck\ConsultRector\Rector\ContainerCache;
 
 #[CoversClass(ConfigAssembler::class)]
+#[UsesClass(ContainerCache::class)]
 final class ConfigAssemblerTest extends TestCase
 {
     public function testAssemblesParseableConfigWithPathsAndRules(): void
@@ -76,6 +79,47 @@ final class ConfigAssemblerTest extends TestCase
         self::assertStringContainsString(
             "    ->withRules([\n        \\Rector\\A::class,\n        \\Rector\\B::class,\n    ]);",
             $multi,
+        );
+    }
+
+    /**
+     * The skip cache is routed to a per-user directory keyed by the run signature
+     * (paths + rules), off Rector's shared `rector_cached_files` default. Identical
+     * runs share it; a different rule set lands elsewhere, so stale skips can't
+     * masquerade as `changed_files: 0`.
+     */
+    public function testIsolatesSkipCacheByRunSignature(): void
+    {
+        $config = (new ConfigAssembler())->assemble(['src'], ['Rector\Some\Rule']);
+
+        self::assertStringContainsString(
+            '->withCache(cacheDirectory: ' . var_export(ContainerCache::skipCacheDirectory([['src'], ['Rector\Some\Rule']]), true) . ',',
+            $config,
+        );
+
+        // A different rule set must resolve to a different skip-cache directory.
+        $other = (new ConfigAssembler())->assemble(['src'], ['Rector\Other\Rule']);
+        self::assertNotSame(
+            ContainerCache::skipCacheDirectory([['src'], ['Rector\Some\Rule']]),
+            ContainerCache::skipCacheDirectory([['src'], ['Rector\Other\Rule']]),
+        );
+        self::assertStringContainsString(
+            ContainerCache::skipCacheDirectory([['src'], ['Rector\Other\Rule']]),
+            $other,
+        );
+    }
+
+    /**
+     * The content-addressed container/PHPStan cache, by contrast, is persisted to a
+     * stable per-user directory rather than disabled.
+     */
+    public function testRoutesContainerCacheToStablePerUserDirectory(): void
+    {
+        $config = (new ConfigAssembler())->assemble(['src'], ['Rector\Some\Rule']);
+
+        self::assertStringContainsString(
+            'containerCacheDirectory: ' . var_export(ContainerCache::directory(), true),
+            $config,
         );
     }
 
