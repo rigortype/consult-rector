@@ -28,7 +28,6 @@ abstract class AbstractRectorCommand extends Command
             ->addArgument('path', InputArgument::REQUIRED, 'File, directory, or glob to transform')
             ->addOption('rules', 'r', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Rector rule FQCN (repeatable)')
             ->addOption('config', null, InputOption::VALUE_REQUIRED, 'Use this rector.php instead of an assembled config')
-            ->addOption('with-config', null, InputOption::VALUE_REQUIRED, "Merge the project's rector.php (asks permission first)")
             ->addOption('json', null, InputOption::VALUE_NONE, 'Emit machine-readable JSON for AI consumption')
             ->addOption('diff-style', null, InputOption::VALUE_REQUIRED, 'Diff representation: unified or array', 'unified')
             ->addOption('phpstan-binary', null, InputOption::VALUE_REQUIRED, 'Explicit PHPStan binary for --verify');
