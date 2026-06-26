@@ -70,7 +70,10 @@ final class Runner
 
     private function writeTempConfig(string $config): string
     {
-        $stub = tempnam(sys_get_temp_dir(), 'consult-rector-');
+        // The same resolved (writable) root the caches use — sys_get_temp_dir()
+        // is unavailable in restricted sandboxes. runConfig() has already created
+        // it via ContainerCache::ensureDirectory().
+        $stub = tempnam(ContainerCache::directory(), 'consult-rector-');
         if ($stub === false) {
             throw new RuntimeException('Could not create a temporary Rector config.');
         }
@@ -101,7 +104,18 @@ final class Runner
         ];
         $pipes = [];
 
-        $process = proc_open($command, $descriptors, $pipes);
+        // Point the Rector subprocess at our resolved writable root for *all* of its
+        // temp use — the parallel workers create scratch via tmpfile()/sys temp,
+        // independent of the cache directories, and that fails in a sandbox where
+        // the system temp is unwritable.
+        $cacheRoot = ContainerCache::directory();
+        $environment = array_merge(getenv(), [
+            'TMPDIR' => $cacheRoot,
+            'TMP' => $cacheRoot,
+            'TEMP' => $cacheRoot,
+        ]);
+
+        $process = proc_open($command, $descriptors, $pipes, null, $environment);
         if (! is_resource($process)) {
             throw new RuntimeException('Could not start the Rector process.');
         }

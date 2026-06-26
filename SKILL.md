@@ -36,7 +36,7 @@ consult-rector dry-run src/Order.php --rules=Rector\...\ClosureToArrowFunctionRe
 
 ## Troubleshooting
 
-No rule fits → write a custom `ast` op. Over-eager Rector → narrow the rule set, re-`dry-run`. Type errors after a breaking change → `apply --verify` lists the unmigrated sites. Unexpected `changed_files: 0` → suspect rule/path mismatch, not the environment: the CLI isolates Rector's caches in a per-user, run-signature-keyed directory, so no shared/foreign `rector_cached_files` tree can swallow changes or skip files as "unchanged".
+No rule fits → write a custom `ast` op. Over-eager Rector → narrow the rule set, re-`dry-run`. Type errors after a breaking change → `apply --verify` lists the unmigrated sites. Unexpected `changed_files: 0` → suspect rule/path mismatch, not the environment: the CLI isolates Rector's caches in a per-user, run-signature-keyed directory, so no shared/foreign `rector_cached_files` tree can swallow changes or skip files as "unchanged". Restricted sandbox (unwritable system temp) → the CLI auto-falls back to a writable location (down to `./.consult-rector-cache`, self-ignored) and notes it on STDERR; override with `CONSULT_RECTOR_CACHE_DIR=<writable dir>` if needed.
 
 ## References
 
