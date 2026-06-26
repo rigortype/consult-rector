@@ -52,7 +52,7 @@ Human (user) ←→ AI Agent ←→ consult-rector skill ←→ consult-rector C
 - **Rule query**: Search existing Rector rules by keyword (multiple keywords AND-narrow: a rule must contain every keyword)
 - **Rule set**: Selected rules with config, assembled as temporary `rector.php`
 - **Cache root resolution** (`ContainerCache`): the writable root for caches *and* the temp config is the first usable of (1) `$CONSULT_RECTOR_CACHE_DIR`, (2) `sys_get_temp_dir()/consult-rector-cache-<uid>` (honours `TMPDIR`), (3) `$XDG_CACHE_HOME`/`$HOME/.cache/consult-rector`, (4) `<cwd>/.consult-rector-cache` (workspace last resort, self-ignored via a `*` `.gitignore`). This survives a restricted sandbox (Cursor, CI) where the system temp is unwritable — otherwise a baffling `changed_files: 0` or "could not create a temporary Rector config". Falling past the system temp is announced once on STDERR; if nothing is writable, a clear error names the candidates and the override. The Rector subprocess also runs with `TMPDIR`/`TMP`/`TEMP` pointed at this root, since Rector's parallel workers create scratch via `tmpfile()` independent of the cache dirs.
-- **Cache policy**: assembled configs route *both* of Rector's caches to that per-user root — off Rector's shared default, so no foreign-owned tree can make Rector fail or skip files. (1) The **container + embedded-PHPStan cache** (`containerCacheDirectory`) sits at the root; content-addressed (SHA-256 + version), it speeds Rector's bootstrap/type-resolution. (2) The **unchanged-files skip cache** (`cacheDirectory`) gets a subdirectory keyed by the run signature (`skip-<hash of paths + rules + Rector version>`): identical re-runs reuse it (skipping files already known clean — e.g. a 826-file dry-run drops from ~38 s to ~4 s on the second pass), while any different rule set lands elsewhere so a stale skip can never suppress another run's changes. The Runner creates the root before invoking Rector (Rector fatals on a missing `containerCacheDirectory`) and surfaces Rector's `fatal_errors` instead of mapping them to `changed_files: 0`. User-supplied configs (`--config`/`--with-config`) are run verbatim and keep their own cache settings.
+- **Cache policy**: assembled configs route *both* of Rector's caches to that per-user root — off Rector's shared default, so no foreign-owned tree can make Rector fail or skip files. (1) The **container + embedded-PHPStan cache** (`containerCacheDirectory`) sits at the root; content-addressed (SHA-256 + version), it speeds Rector's bootstrap/type-resolution. (2) The **unchanged-files skip cache** (`cacheDirectory`) gets a subdirectory keyed by the run signature (`skip-<hash of paths + rules + Rector version>`): identical re-runs reuse it (skipping files already known clean — e.g. a 826-file dry-run drops from ~38 s to ~4 s on the second pass), while any different rule set lands elsewhere so a stale skip can never suppress another run's changes. The Runner creates the root before invoking Rector (Rector fatals on a missing `containerCacheDirectory`) and surfaces Rector's `fatal_errors` instead of mapping them to `changed_files: 0`. A user-supplied `--config=rector.php` is run verbatim and keeps its own cache settings.
 - **Recipe**: Multi-step procedure with ordered rule applications
 - **Custom rule**: PHP-Parser-based transformation generated ephemerally within a session
 
@@ -73,7 +73,7 @@ consult-rector doc section <file> <N>            # Extract section by number
 - **Diff style control**: `--diff-style=unified` (default, string) or `--diff-style=array` (structured array). Different keys per style (`diff_unified` vs `diff_array`) to keep types clean (never same key with variant types)
 - **dry-run JSON schema**: `{mode, totals:{changed_files, errors}, files:[{file, applied_rules, diff_unified|diff_array}], errors}`. `diff_array` is a list of hunks `{from_start, from_count, to_start, to_count, lines:[{type:context|add|remove, text}]}`
 - **apply JSON schema**: lightweight — `{mode, files_changed, files_errored, errors}` only (detailed diff via `git diff`)
-- **Config merging**: with `--with-config=rector.php`, consult-rector asks user permission before merging project settings with temporary config
+- **Config merging** (deferred, not in v1): merging the project's `rector.php` *into* the assembled config is intentionally out of scope. Use `--config=rector.php` to run a project config verbatim instead.
 
 ## AST DSL
 
@@ -126,7 +126,7 @@ For an intentional breaking change to a declaration whose new shape must reach e
   5. `phpstan` on PATH
   6. Not found → verification skipped (warning emitted; rewrites still apply)
 - **Scope**: project-wide (usage sites span the codebase); the declaration + usages apply atomically via `chain`
-- **Config merging**: user-permission-gated before merging the project's rector.php with the temporary config
+- **Config merging**: deferred (not in v1) — see "Config merging" under CLI concepts
 
 ## Testing strategy
 

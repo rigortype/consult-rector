@@ -25,7 +25,7 @@ final class RectorTools
         return [
             'search' => [
                 'name' => 'rector_search',
-                'description' => 'Search Rector rules by keyword',
+                'description' => 'Search Rector rules by keyword(s); space-separated keywords narrow the result (AND)',
             ],
             'dryRun' => [
                 'name' => 'rector_dry_run',
@@ -59,7 +59,12 @@ final class RectorTools
      */
     public function search(string $keyword): array
     {
-        return $this->run(['search', $keyword]);
+        // Mirror the CLI's multiple-keyword AND search: split on whitespace so an
+        // agent can narrow with a single string ("closure arrow").
+        $parts = preg_split('/\s+/', trim($keyword), -1, PREG_SPLIT_NO_EMPTY);
+        $keywords = is_array($parts) && $parts !== [] ? $parts : [$keyword];
+
+        return $this->run(array_merge(['search'], $keywords));
     }
 
     /**
@@ -124,24 +129,50 @@ final class RectorTools
     {
         $binary = \dirname(__DIR__, 2) . '/bin/consult-rector';
         $command = array_merge([PHP_BINARY, $binary], $args, ['--json']);
-        $escaped = implode(' ', array_map('escapeshellarg', $command));
 
-        // STDERR is discarded: only the structured JSON on STDOUT is the result.
-        $output = shell_exec($escaped . ' 2>/dev/null');
-        if (! is_string($output) || trim($output) === '') {
+        // proc_open with an array command bypasses the shell (no escaping needed) and
+        // keeps STDOUT and STDERR separate, so a failure's STDERR detail is captured
+        // rather than discarded — otherwise every error reads as "no output".
+        $descriptors = [
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $pipes = [];
+
+        $process = proc_open($command, $descriptors, $pipes);
+        if (! is_resource($process)) {
             return [
-                'error' => 'consult-rector produced no output',
+                'error' => 'Could not start consult-rector.',
+            ];
+        }
+
+        $stdout = stream_get_contents($pipes[1]);
+        fclose($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[2]);
+        proc_close($process);
+
+        $stdout = is_string($stdout) ? $stdout : '';
+        $stderr = is_string($stderr) ? trim($stderr) : '';
+
+        if (trim($stdout) === '') {
+            return [
+                'error' => $stderr !== '' ? $stderr : 'consult-rector produced no output',
             ];
         }
 
         /** @var mixed $decoded */
-        $decoded = json_decode($output, true);
-
+        $decoded = json_decode($stdout, true);
         if (! is_array($decoded)) {
-            return [
+            $result = [
                 'error' => 'consult-rector returned invalid JSON',
-                'raw' => $output,
+                'raw' => $stdout,
             ];
+            if ($stderr !== '') {
+                $result['stderr'] = $stderr;
+            }
+
+            return $result;
         }
 
         /** @var array<string, mixed> $decoded */
