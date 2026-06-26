@@ -129,3 +129,27 @@ diff-producing files are reprocessed every run (Rector never caches a file that
 still has a pending diff), only the ~808 clean files are skipped. This restores the
 scale-relevant speedup while keeping every robustness property: per-user ownership,
 content-hash validation, per-signature isolation, and `fatal_errors` surfacing.
+
+## Follow-up: surviving an unwritable system temp (implemented)
+
+A first-use trace from a sandboxed agent (restricted `/tmp`) showed the earlier
+assumption — "`sys_get_temp_dir()` is writable" — does not hold everywhere. There it
+manifested as the same silent `changed_files: 0`, then a ~15-step hunt that ended in
+the user discovering `TMPDIR=<workspace dir>` by hand.
+
+The per-user root is now the **first writable** of: `$CONSULT_RECTOR_CACHE_DIR` →
+`sys_get_temp_dir()/consult-rector-cache-<uid>` → `$HOME/.cache/consult-rector` →
+`<cwd>/.consult-rector-cache` (self-ignored via a `*` `.gitignore`); if none is
+writable a clear error names the candidates and the override. Two subtleties the
+trace surfaced:
+
+- The **temp config** (`Runner::writeTempConfig`) shared the same system-temp
+  dependency, so it uses the resolved root too.
+- Rector's **parallel workers** create scratch via `tmpfile()`, independent of the
+  cache directories. So the Rector subprocess runs with `TMPDIR`/`TMP`/`TEMP`
+  pointed at the resolved root; otherwise it fails with "Failed creating temp file"
+  even after the caches are redirected.
+
+Net effect: in a Cursor-style sandbox the tool now *just works* with no manual
+`TMPDIR`, collapsing that ~15-step ordeal back to the `search → dry-run → apply`
+happy path.
