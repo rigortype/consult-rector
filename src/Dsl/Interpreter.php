@@ -61,7 +61,7 @@ final class Interpreter
             throw new DslException('A DSL node must be a non-empty JSON array.');
         }
 
-        $name = $dsl[0] ?? null;
+        $name = $dsl[0];
         if (! is_string($name) || $name === '') {
             throw new DslException('A DSL node must start with a transform name (string).');
         }

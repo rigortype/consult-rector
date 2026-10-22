@@ -7,7 +7,7 @@
     "require": {
         "php": ">=8.2",
         "ext-json": "*",
-        "mcp/sdk": "^0.6",
+        "mcp/sdk": "^0.9",
         "rector/rector": "^2.5",
         "symfony/console": "^7.0"
     },

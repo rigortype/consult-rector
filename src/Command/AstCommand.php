@@ -65,7 +65,7 @@ final class AstCommand extends Command
             $compiled = (new Interpreter())->interpret($decoded);
             $config = (new DslConfigAssembler())->assemble([$path], $compiled);
             $result = (new Runner())->runConfig($config, ! $apply);
-        } catch (DslException | InvalidArgumentException $exception) {
+        } catch (DslException|InvalidArgumentException $exception) {
             $errorStyle->error($exception->getMessage());
 
             return Command::INVALID;
