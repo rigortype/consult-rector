@@ -9,16 +9,16 @@
     "packages-dev": [
         {
             "name": "symplify/easy-coding-standard",
-            "version": "13.3.8",
+            "version": "13.3.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ecsphp/ecs.git",
-                "reference": "0564c0b9b807f1740bf0f2cc965ab51551f4dc3b"
+                "reference": "3e1b33d0f8900ce8df7dfde518e832dc0b188462"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ecsphp/ecs/zipball/0564c0b9b807f1740bf0f2cc965ab51551f4dc3b",
-                "reference": "0564c0b9b807f1740bf0f2cc965ab51551f4dc3b",
+                "url": "https://api.github.com/repos/ecsphp/ecs/zipball/3e1b33d0f8900ce8df7dfde518e832dc0b188462",
+                "reference": "3e1b33d0f8900ce8df7dfde518e832dc0b188462",
                 "shasum": ""
             },
             "require": {
@@ -51,9 +51,9 @@
             ],
             "support": {
                 "issues": "https://github.com/ecsphp/ecs/issues",
-                "source": "https://github.com/ecsphp/ecs/tree/13.3.8"
+                "source": "https://github.com/ecsphp/ecs/tree/13.3.11"
             },
-            "time": "2026-10-20T21:02:34+00:00"
+            "time": "2026-10-26T13:16:42+00:00"
         }
     ],
     "aliases": [],
