@@ -37,7 +37,7 @@ final class RectorTools
             ],
             'ast' => [
                 'name' => 'rector_ast',
-                'description' => 'Apply a custom AST DSL transformation',
+                'description' => 'Apply a custom AST DSL transformation; engine "phpstan" runs usage-site transforms on the project\'s PHPStan (experimental)',
             ],
             'docIndex' => [
                 'name' => 'rector_doc_index',
@@ -86,9 +86,9 @@ final class RectorTools
     /**
      * @return array<string, mixed>
      */
-    public function ast(string $path, string $dsl): array
+    public function ast(string $path, string $dsl, string $engine = 'rector'): array
     {
-        return $this->run(['ast', $path, $dsl]);
+        return $this->run(['ast', $path, $dsl, '--engine=' . $engine]);
     }
 
     /**

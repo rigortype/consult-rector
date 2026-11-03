@@ -82,7 +82,7 @@ reviewable and scriptable:
 | `search <keyword>` | find an installed Rector rule |
 | `dry-run <path> --rules=FQCN` | propose changes (JSON) without writing files |
 | `apply <path> --rules=FQCN` | rewrite files (`--verify` runs the PHPStan oracle) |
-| `ast <path> '<dsl-json>'` | a custom AST transform (dry-run by default; `--apply`) |
+| `ast <path> '<dsl-json>'` | a custom AST transform (dry-run by default; `--apply`; `--engine=phpstan` runs usage-site transforms on the project's PHPStan, experimental) |
 | `doc index\|section <file>` | page through the large rule references |
 | `phpstan <path> [--baseline=…]` | the completeness oracle: all errors, or the delta |
 

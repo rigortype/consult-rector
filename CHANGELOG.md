@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- **[dsl]** `ast --engine=phpstan` (MCP `rector_ast`: `engine`) runs usage-site transforms such as `migrate-arg-to-enum` as fixable rules in the project's own PHPStan, so call sites are matched with the project's PHPStan configuration (stubs, extensions). Declaration transforms in the same `chain` still run on Rector, and both are shown as one diff. Experimental; needs PHPStan 2.3.5 or later.
+
+### Added
+
 - **[dsl]** `replace-param-type`, `replace-return-type` and `replace-type` accept any native type in `from` and `to`: nullable (`?T`), union, intersection and DNF types such as `(A&B)|null`.
 
 ### Changed

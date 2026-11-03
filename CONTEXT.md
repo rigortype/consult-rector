@@ -67,6 +67,7 @@ consult-rector doc index <file>                  # md2idx-style section index
 consult-rector doc section <file> <N>            # Extract section by number
 ```
 
+- **AST engine** (`ast --engine=rector|phpstan`): usage-site transforms run on Rector by default; `phpstan` (experimental, ADR-0007) runs them as fixable rules in the project's own PHPStan, merged with Rector's declaration diffs into one consolidated diff. Needs PHPStan 2.3.5+
 - **Rule specification**: FQCN-based (`--rules=Rector\...\SomeRector`), with `--config=rector.php` fallback
 - **Target files**: single file, directory, or glob
 - **Output format**: human-friendly by default; `--json` flag for machine-readable output (AI consumption)
