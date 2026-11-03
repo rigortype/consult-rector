@@ -1,0 +1,9 @@
+version: 2
+updates:
+  # Keeps action versions and .github/workflows/actions.lock in sync.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 3

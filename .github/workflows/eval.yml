@@ -35,14 +35,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
 
       # --- Install waza ---------------------------------------------------
       # Official path: the waza Azure Developer CLI (azd) extension.
       # Pin the extension version once a release cadence is known.
       # Alternative: download a pinned waza binary from microsoft/waza releases.
       - name: Install Azure Developer CLI
-        uses: Azure/setup-azd@v2
+        uses: Azure/setup-azd@v2.4.0
       - name: Install waza extension
         run: |
           azd config set alpha.extensions on
@@ -72,7 +72,7 @@ jobs:
 
       - name: Upload eval results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: eval-results
           path: ./results
