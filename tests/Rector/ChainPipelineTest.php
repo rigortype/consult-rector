@@ -12,6 +12,7 @@ use TypedDuck\ConsultRector\Dsl\Interpreter;
 use TypedDuck\ConsultRector\Dsl\Transform\AddImport;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceParamType;
 use TypedDuck\ConsultRector\Dsl\TransformResolver;
+use TypedDuck\ConsultRector\Dsl\TypeExpression;
 use TypedDuck\ConsultRector\Rector\DslConfigAssembler;
 use TypedDuck\ConsultRector\Rector\FileChange;
 use TypedDuck\ConsultRector\Rector\Rule\AddImportRector;
@@ -23,6 +24,7 @@ use TypedDuck\ConsultRector\Rector\Runner;
  * and produces a single consolidated diff carrying both changes (ADR-0005).
  */
 #[CoversClass(DslConfigAssembler::class)]
+#[UsesClass(TypeExpression::class)]
 #[UsesClass(Interpreter::class)]
 #[UsesClass(TransformResolver::class)]
 #[UsesClass(ReplaceParamType::class)]

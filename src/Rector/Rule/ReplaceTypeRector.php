@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TypedDuck\ConsultRector\Rector\Rule;
 
 use PhpParser\Node;
+use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
 use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Rector\AbstractRector;
@@ -77,7 +78,7 @@ final class ReplaceTypeRector extends AbstractRector implements ConfigurableRect
                     continue;
                 }
 
-                if ($property->type === null || ! $this->isName($property->type, $spec['from'])) {
+                if ($property->type === null || ! $this->hasType($property->type, $spec['from'])) {
                     continue; // `from` guard: leave an unexpected current type untouched
                 }
 
@@ -98,6 +99,11 @@ final class ReplaceTypeRector extends AbstractRector implements ConfigurableRect
         }
 
         return false;
+    }
+
+    private function hasType(Node $type, string $from): bool
+    {
+        return TypeNodeFactory::matches($type, $from, fn (Name $name): string => $this->getName($name));
     }
 
     public function getRuleDefinition(): RuleDefinition

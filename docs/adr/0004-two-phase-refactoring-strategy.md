@@ -50,6 +50,15 @@ Supplied **explicitly** in the DSL, so the transform also works for non-backed e
   ["map", [["asc", "App\\AscDesc::Asc"], ["desc", "App\\AscDesc::Desc"]]]]
 ```
 
+### Call-site matching
+
+Calls are matched by method name, then narrowed with the type information Rector already carries (PHPStan's scope):
+
+- **Class-qualified method** (`Sorter::sort`): the receiver's type must be the class or a subtype — an instance or nullsafe call (`$x->sort()`, `$x?->sort()`) by its inferred type, a static call by its class (subclasses included). A same-named method on an unrelated class is left alone.
+- **Untyped receiver** (no known class, e.g. `mixed`): falls back to the method-name heuristic. PHPStan cannot type-check these sites either, so they are the part of the migration that rests on review rather than on the oracle.
+- **Bare method name**: the heuristic, by request.
+- **Named arguments**: `arg` is the parameter position; a named argument is matched by the parameter name read from the method's reflection.
+
 ### PHPStan as the completeness oracle
 
 PHPStan is run after the rewrites to confirm completeness and to enumerate any residual sites. The loop is **skill-orchestrated** — mapping a residual PHPStan error to a follow-up fix needs AI judgment — while the CLI provides the primitive: run PHPStan over the affected set and return the structured error **delta** against a pre-change baseline (errors present after the change that were absent before). Error identity is matched on `(file, PHPStan identifier, normalized message)`, independent of line number.

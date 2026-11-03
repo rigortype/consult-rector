@@ -30,6 +30,8 @@ Transformations are expressed as nested JSON arrays, where the first element is 
 
 For type-change transforms (`replace-type`, `replace-param-type`, `replace-return-type`), the current type (`from`) is **required**. It acts as a precondition guard: the generated Rector rule fires only when the existing type matches `from`, so an unexpected current type is left untouched rather than silently rewritten.
 
+`from` and `to` accept any native type declaration — a single type, `?T`, a union, an intersection, or DNF such as `(A&B)|null` — and are validated when the transform compiles. The guard compares types canonically, ignoring member order, case, a leading `\` and the `?T` / `T|null` spelling, so `["from", "null|string"]` matches a declared `?string`.
+
 ### Composition via chain
 
 Multiple transformations are composed with the `chain` transform:

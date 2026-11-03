@@ -10,9 +10,11 @@ use PHPUnit\Framework\TestCase;
 use TypedDuck\ConsultRector\Dsl\CompiledRule;
 use TypedDuck\ConsultRector\Dsl\DslException;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceReturnType;
+use TypedDuck\ConsultRector\Dsl\TypeExpression;
 use TypedDuck\ConsultRector\Rector\Rule\ReplaceReturnTypeRector;
 
 #[CoversClass(ReplaceReturnType::class)]
+#[UsesClass(TypeExpression::class)]
 #[UsesClass(CompiledRule::class)]
 final class ReplaceReturnTypeTest extends TestCase
 {
@@ -54,6 +56,18 @@ final class ReplaceReturnTypeTest extends TestCase
             'method' => '',
             'from' => 'string',
             'to' => 'B',
+        ]);
+    }
+
+    public function testRejectsAnInvalidFromType(): void
+    {
+        $this->expectException(DslException::class);
+
+        (new ReplaceReturnType())->compile([
+            'class' => 'A',
+            'method' => 'm',
+            'from' => '?int|string',
+            'to' => 'int',
         ]);
     }
 }

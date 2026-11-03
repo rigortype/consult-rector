@@ -76,4 +76,49 @@ final class MigrateArgToEnumPipelineTest extends TestCase
         self::assertStringContainsString('+$result = $sorter->sort($rows, \App\AscDesc::Asc);', $change->diff);
         self::assertContains(MigrateArgToEnumRector::class, $change->appliedRules);
     }
+
+    public function testAClassQualifiedSpecFollowsTheReceiverTypeAndNamedArguments(): void
+    {
+        $file = $this->workspace . '/typed.php';
+        file_put_contents($file, implode("\n", [
+            '<?php',
+            '',
+            'namespace App;',
+            '',
+            'interface Sorter { public function sort(array $rows, string $dir): array; }',
+            'class Other { public function sort(array $rows, string $dir): array { return $rows; } }',
+            'class Factory { public static function sort(array $rows, string $dir): array { return $rows; } }',
+            'class SubFactory extends Factory {}',
+            '',
+            'function run(Sorter $sorter, ?Sorter $maybe, Other $other, $untyped): void',
+            '{',
+            '    $sorter->sort([], \'asc\');',
+            '    $sorter->sort(dir: \'desc\', rows: []);',
+            '    $maybe?->sort([], \'asc\');',
+            '    $other->sort([], \'asc\');',
+            '    $untyped->sort([], \'desc\');',
+            '    SubFactory::sort([], \'asc\');',
+            '}',
+            '',
+        ]));
+
+        $map = ['map', [['asc', 'App\AscDesc::Asc'], ['desc', 'App\AscDesc::Desc']]];
+        $compiled = (new Interpreter())->interpret([
+            'chain',
+            ['migrate-arg-to-enum', ['method', 'App\Sorter::sort'], ['arg', 1], $map],
+            ['migrate-arg-to-enum', ['method', 'App\Factory::sort'], ['arg', 1], $map],
+        ]);
+        $result = (new Runner())->runConfig((new DslConfigAssembler())->assemble([$file], $compiled), true);
+
+        $change = $result->files[0] ?? null;
+        self::assertInstanceOf(FileChange::class, $change);
+        self::assertStringContainsString('+    $sorter->sort([], \App\AscDesc::Asc);', $change->diff);
+        self::assertStringContainsString('+    $sorter->sort(dir: \App\AscDesc::Desc, rows: []);', $change->diff);
+        self::assertStringContainsString('+    $maybe?->sort([], \App\AscDesc::Asc);', $change->diff);
+        // No known class on the receiver: the method-name heuristic still applies.
+        self::assertStringContainsString('+    $untyped->sort([], \App\AscDesc::Desc);', $change->diff);
+        self::assertStringContainsString('+    SubFactory::sort([], \App\AscDesc::Asc);', $change->diff);
+        // A same-named method on an unrelated class stays untouched (context line).
+        self::assertStringContainsString("\n     \$other->sort([], 'asc');", $change->diff);
+    }
 }

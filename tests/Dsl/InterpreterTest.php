@@ -12,9 +12,11 @@ use TypedDuck\ConsultRector\Dsl\DslException;
 use TypedDuck\ConsultRector\Dsl\Interpreter;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceParamType;
 use TypedDuck\ConsultRector\Dsl\TransformResolver;
+use TypedDuck\ConsultRector\Dsl\TypeExpression;
 use TypedDuck\ConsultRector\Rector\Rule\ReplaceParamTypeRector;
 
 #[CoversClass(Interpreter::class)]
+#[UsesClass(TypeExpression::class)]
 #[UsesClass(TransformResolver::class)]
 #[UsesClass(ReplaceParamType::class)]
 #[UsesClass(CompiledRule::class)]

@@ -11,6 +11,7 @@ use TypedDuck\ConsultRector\Dsl\CompiledRule;
 use TypedDuck\ConsultRector\Dsl\Interpreter;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceParamType;
 use TypedDuck\ConsultRector\Dsl\TransformResolver;
+use TypedDuck\ConsultRector\Dsl\TypeExpression;
 use TypedDuck\ConsultRector\Rector\DslConfigAssembler;
 use TypedDuck\ConsultRector\Rector\FileChange;
 use TypedDuck\ConsultRector\Rector\Rule\ReplaceParamTypeRector;
@@ -21,6 +22,7 @@ use TypedDuck\ConsultRector\Rector\Runner;
  * shipped ReplaceParamTypeRector through the real Rector binary (ADR-0006).
  */
 #[CoversClass(ReplaceParamTypeRector::class)]
+#[UsesClass(TypeExpression::class)]
 #[UsesClass(Interpreter::class)]
 #[UsesClass(TransformResolver::class)]
 #[UsesClass(ReplaceParamType::class)]
@@ -90,5 +92,52 @@ final class AstPipelineTest extends TestCase
         ]));
 
         return $file;
+    }
+
+    public function testFromGuardMatchesAnEquivalentSpellingAndToBuildsAUnion(): void
+    {
+        $file = $this->workspace . '/Nullable.php';
+        file_put_contents($file, implode("\n", [
+            '<?php',
+            '',
+            'namespace App;',
+            '',
+            'final class OrderService',
+            '{',
+            '    public function find(?string $id): void',
+            '    {',
+            '    }',
+            '}',
+            '',
+        ]));
+
+        $compiled = (new Interpreter())->interpret([
+            'replace-param-type',
+            ['class', 'App\OrderService'],
+            ['method', 'find'],
+            ['param', 0],
+            ['from', 'null|string'],
+            ['to', 'App\OrderId|int|null'],
+        ]);
+        $result = (new Runner())->runConfig((new DslConfigAssembler())->assemble([$file], $compiled), true);
+
+        $change = $result->files[0] ?? null;
+        self::assertInstanceOf(FileChange::class, $change);
+        self::assertStringContainsString('+    public function find(\App\OrderId|int|null $id): void', $change->diff);
+    }
+
+    public function testFromGuardStillRejectsADifferentType(): void
+    {
+        $compiled = (new Interpreter())->interpret([
+            'replace-param-type',
+            ['class', 'App\OrderService'],
+            ['method', 'setStatus'],
+            ['param', 0],
+            ['from', '?string'],
+            ['to', 'int'],
+        ]);
+        $result = (new Runner())->runConfig((new DslConfigAssembler())->assemble([$this->fixture()], $compiled), true);
+
+        self::assertSame(0, $result->changedFiles);
     }
 }
