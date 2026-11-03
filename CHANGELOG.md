@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **[dsl]** `replace-param-type`, `replace-return-type` and `replace-type` accept any native type in `from` and `to`: nullable (`?T`), union, intersection and DNF types such as `(A&B)|null`.
+
+### Changed
+
+- **[dsl]** The `from` guard compares types canonically, so `string|null` matches a declared `?string` and member order or case no longer matters.
+- **[dsl]** An invalid `from` or `to` type is rejected when the transform compiles instead of failing inside the Rector run.
+- **[dsl]** `migrate-arg-to-enum` with a class-qualified method (`Sorter::sort`) now checks the receiver's type, so a same-named method on an unrelated class is left alone; static calls through a subclass are matched too.
+- **[dsl]** `migrate-arg-to-enum` rewrites named arguments (`sort(dir: 'asc')`) and nullsafe calls (`$sorter?->sort(...)`).
+
+### Fixed
+
+- **[dsl]** A nullable or union `from` (for example `?string`) no longer silently matches nothing.
+
 ## [0.0.2] - 2026-06-26
 
 consult-rector 0.0.2 is about running reliably wherever an agent drives it. It now works inside restricted sandboxes where the system temporary directory is unwritable, no longer reports a misleading `changed_files: 0` when a run actually failed, and re-runs an unchanged codebase far faster. The MCP tools reach parity with the CLI's multi-keyword search and now surface real error detail instead of a bare "no output". Other changes include multi-keyword rule search on the CLI and the removal of a non-functional option.

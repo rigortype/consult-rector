@@ -11,6 +11,7 @@ use TypedDuck\ConsultRector\Dsl\CompiledRule;
 use TypedDuck\ConsultRector\Dsl\Interpreter;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceReturnType;
 use TypedDuck\ConsultRector\Dsl\TransformResolver;
+use TypedDuck\ConsultRector\Dsl\TypeExpression;
 use TypedDuck\ConsultRector\Rector\DslConfigAssembler;
 use TypedDuck\ConsultRector\Rector\FileChange;
 use TypedDuck\ConsultRector\Rector\Rule\ReplaceReturnTypeRector;
@@ -21,6 +22,7 @@ use TypedDuck\ConsultRector\Rector\Runner;
  * shipped ReplaceReturnTypeRector through the real Rector binary (ADR-0006).
  */
 #[CoversClass(ReplaceReturnTypeRector::class)]
+#[UsesClass(TypeExpression::class)]
 #[UsesClass(Interpreter::class)]
 #[UsesClass(TransformResolver::class)]
 #[UsesClass(ReplaceReturnType::class)]

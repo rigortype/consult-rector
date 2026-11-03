@@ -10,9 +10,11 @@ use PHPUnit\Framework\TestCase;
 use TypedDuck\ConsultRector\Dsl\CompiledRule;
 use TypedDuck\ConsultRector\Dsl\DslException;
 use TypedDuck\ConsultRector\Dsl\Transform\ReplaceType;
+use TypedDuck\ConsultRector\Dsl\TypeExpression;
 use TypedDuck\ConsultRector\Rector\Rule\ReplaceTypeRector;
 
 #[CoversClass(ReplaceType::class)]
+#[UsesClass(TypeExpression::class)]
 #[UsesClass(CompiledRule::class)]
 final class ReplaceTypeTest extends TestCase
 {
@@ -54,6 +56,18 @@ final class ReplaceTypeTest extends TestCase
             'property' => '',
             'from' => 'string',
             'to' => 'B',
+        ]);
+    }
+
+    public function testRejectsAnInvalidFromType(): void
+    {
+        $this->expectException(DslException::class);
+
+        (new ReplaceType())->compile([
+            'class' => 'A',
+            'property' => 'p',
+            'from' => '?int|string',
+            'to' => 'int',
         ]);
     }
 }

@@ -89,7 +89,7 @@ Custom PHP-Parser transformations expressed as an S-expression in JSON array for
 ```
 
 - **Implementation**: JSON array S-expressions (no custom parser needed)
-- **Precondition guard**: type-change transforms require the current type (`from`); the transform fires only when the existing type matches, preventing accidental rewrites
+- **Precondition guard**: type-change transforms require the current type (`from`); the transform fires only when the existing type matches, preventing accidental rewrites. Types are native declarations (`?T`, unions, intersections, DNF), compared canonically (member order, case and `?T` vs `T|null` don't matter)
 - **Internal architecture**: DSL Interpreter → Transform Resolver (plugin-based) → DSL Config Assembler (`ruleWithConfiguration` of shipped rules) → Rector Runner → Result Formatter
 - **Composite transforms**: `["chain", [...], [...]]` flattens to a **single** temporary rector.php (one `ruleWithConfiguration` per rule); Rector applies them in one fixpoint pass, yielding one **consolidated** original→final diff (not N partial diffs). `chain` is a composition primitive, not a catalog leaf
 - **Built-in transform catalog**: each transform is a shipped `ConfigurableRectorInterface` rule plus a small compiler that maps the S-expression to its configuration

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TypedDuck\ConsultRector\Rector\Rule;
 
 use PhpParser\Node;
+use PhpParser\Node\Name;
 use PhpParser\Node\Stmt\Class_;
 use Rector\Contract\Rector\ConfigurableRectorInterface;
 use Rector\Rector\AbstractRector;
@@ -77,7 +78,7 @@ final class ReplaceReturnTypeRector extends AbstractRector implements Configurab
                     continue;
                 }
 
-                if ($method->returnType === null || ! $this->isName($method->returnType, $spec['from'])) {
+                if ($method->returnType === null || ! $this->hasType($method->returnType, $spec['from'])) {
                     continue; // `from` guard: leave an unexpected current type untouched
                 }
 
@@ -87,6 +88,11 @@ final class ReplaceReturnTypeRector extends AbstractRector implements Configurab
         }
 
         return $changed ? $node : null;
+    }
+
+    private function hasType(Node $type, string $from): bool
+    {
+        return TypeNodeFactory::matches($type, $from, fn (Name $name): string => $this->getName($name));
     }
 
     public function getRuleDefinition(): RuleDefinition

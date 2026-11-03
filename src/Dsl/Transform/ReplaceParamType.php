@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace TypedDuck\ConsultRector\Dsl\Transform;
 
+use InvalidArgumentException;
 use TypedDuck\ConsultRector\Dsl\CompiledRule;
 use TypedDuck\ConsultRector\Dsl\DslException;
+use TypedDuck\ConsultRector\Dsl\TypeExpression;
 use TypedDuck\ConsultRector\Rector\Rule\ReplaceParamTypeRector;
 
 /**
@@ -26,9 +28,27 @@ final class ReplaceParamType implements Transform
             'class' => $this->requireString($arguments, 'class'),
             'method' => $this->requireString($arguments, 'method'),
             'param' => $this->requireIndex($arguments, 'param'),
-            'from' => $this->requireString($arguments, 'from'),
-            'to' => $this->requireString($arguments, 'to'),
+            'from' => $this->requireType($arguments, 'from'),
+            'to' => $this->requireType($arguments, 'to'),
         ]);
+    }
+
+    /**
+     * A non-empty string that parses as a native type declaration (see {@see TypeExpression}).
+     *
+     * @param array<string, mixed> $arguments
+     */
+    private function requireType(array $arguments, string $key): string
+    {
+        $type = $this->requireString($arguments, $key);
+
+        try {
+            TypeExpression::parse($type);
+        } catch (InvalidArgumentException $exception) {
+            throw new DslException(sprintf('%s: "%s" — %s', $this->name(), $key, $exception->getMessage()), 0, $exception);
+        }
+
+        return $type;
     }
 
     /**
