@@ -101,7 +101,7 @@ Find call sites by symbol/method name and rewrite, with no PHPStan step.
 ## Consequences
 
 - A new **usage-site transform family** is required — rewriting call nodes (`MethodCall` / `StaticCall`) by literal argument — distinct from the existing declaration transforms.
-- PHPStan is used as a **completeness oracle**, not an error-fixer; the CLI provides the PHPStan-delta primitive and the loop is skill-orchestrated.
+- PHPStan is used as a **completeness oracle**, not an error-fixer; the CLI provides the PHPStan-delta primitive and the loop is skill-orchestrated. (Amended by ADR-0007: PHPStan can also be the doer for usage-site transforms, opted into with `ast --engine=phpstan`.)
 - Phase 2 is **project-wide** and the migration is applied **atomically** (chain) to avoid a broken intermediate.
 - Completeness is "no type-checkable misses" — sites whose values are dynamic or untyped are reported for manual handling, never silently dropped.
 - `--phpstan-binary` and the verification step depend on PHPStan being present; absent it, rewrites apply but completeness is unverified.

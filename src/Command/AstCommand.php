@@ -16,6 +16,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 use Throwable;
 use TypedDuck\ConsultRector\Dsl\DslException;
 use TypedDuck\ConsultRector\Dsl\Interpreter;
+use TypedDuck\ConsultRector\PhpStan\FixCollector;
+use TypedDuck\ConsultRector\PhpStan\PhpStanEngine;
 use TypedDuck\ConsultRector\PhpStan\PhpStanRunner;
 use TypedDuck\ConsultRector\PhpStan\Verifier;
 use TypedDuck\ConsultRector\Rector\DslConfigAssembler;
@@ -36,7 +38,8 @@ final class AstCommand extends Command
             ->addOption('verify', null, InputOption::VALUE_NONE, 'With --apply, run PHPStan afterward and report newly introduced errors (ADR-0004)')
             ->addOption('json', null, InputOption::VALUE_NONE, 'Emit machine-readable JSON for AI consumption')
             ->addOption('diff-style', null, InputOption::VALUE_REQUIRED, 'Diff representation: unified or array', 'unified')
-            ->addOption('phpstan-binary', null, InputOption::VALUE_REQUIRED, 'Explicit PHPStan binary for --verify');
+            ->addOption('engine', null, InputOption::VALUE_REQUIRED, 'Engine for usage-site transforms: rector, or phpstan (experimental, ADR-0007)', 'rector')
+            ->addOption('phpstan-binary', null, InputOption::VALUE_REQUIRED, 'Explicit PHPStan binary for --verify and --engine=phpstan');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -56,6 +59,13 @@ final class AstCommand extends Command
             return Command::INVALID;
         }
 
+        $engine = $input->getOption('engine');
+        if ($engine !== 'rector' && $engine !== 'phpstan') {
+            $errorStyle->error('--engine must be "rector" or "phpstan".');
+
+            return Command::INVALID;
+        }
+
         $apply = $input->getOption('apply') === true;
         $verify = $apply && $input->getOption('verify') === true;
         $verifier = new Verifier(new PhpStanRunner($this->phpStanBinary($input)));
@@ -63,8 +73,9 @@ final class AstCommand extends Command
 
         try {
             $compiled = (new Interpreter())->interpret($decoded);
-            $config = (new DslConfigAssembler())->assemble([$path], $compiled);
-            $result = (new Runner())->runConfig($config, ! $apply);
+            $result = $engine === 'phpstan'
+                ? (new PhpStanEngine(new FixCollector(new PhpStanRunner($this->phpStanBinary($input)))))->run([$path], $compiled, ! $apply)
+                : (new Runner())->runConfig((new DslConfigAssembler())->assemble([$path], $compiled), ! $apply);
         } catch (DslException|InvalidArgumentException $exception) {
             $errorStyle->error($exception->getMessage());
 

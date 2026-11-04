@@ -26,7 +26,7 @@ Clarify vague requests before acting; prefer Rector UPGRADE sets for version bum
 
 ## Commands
 
-`search <keyword…>` (space-separated keywords AND-narrow) · `dry-run`/`apply <path> --rules=FQCN` · `ast <path> '<dsl-json>'` (`--apply`, `--verify`) · `doc index|section` · `phpstan [--baseline]`. Add `--json` for machine output; full reference in `CONTEXT.md`.
+`search <keyword…>` (space-separated keywords AND-narrow) · `dry-run`/`apply <path> --rules=FQCN` · `ast <path> '<dsl-json>'` (`--apply`, `--verify`, `--engine=phpstan`) · `doc index|section` · `phpstan [--baseline]`. Add `--json` for machine output; full reference in `CONTEXT.md`.
 
 ## Example
 

@@ -79,6 +79,44 @@ final class PhpStanRunner
     }
 
     /**
+     * The binary's version (`2.3.5`), or null when it cannot be determined.
+     */
+    public function version(): ?string
+    {
+        $binary = $this->binary();
+        if ($binary === null) {
+            return null;
+        }
+
+        [$stdout] = $this->exec($binary, ['--version', '--no-ansi']);
+
+        return preg_match('/(\d+\.\d+\.\d+)/', $stdout, $matches) === 1 ? $matches[1] : null;
+    }
+
+    /**
+     * Run `analyse` with a custom configuration and error format, returning the raw
+     * output — for formats other than PHPStan's JSON (the PHPStan engine, ADR-0007).
+     *
+     * @param list<string> $paths
+     *
+     * @return array{0: string, 1: string, 2: int} stdout, stderr, exit code
+     */
+    public function analyseRaw(array $paths, string $configuration, string $errorFormat, ?string $autoloadFile = null): array
+    {
+        $binary = $this->binary();
+        if ($binary === null) {
+            throw new RuntimeException('No PHPStan binary found (see ADR-0004 detection priority).');
+        }
+
+        $args = ['analyse', ...$paths, '--configuration=' . $configuration, '--error-format=' . $errorFormat, '--no-progress', '--no-ansi'];
+        if ($autoloadFile !== null) {
+            $args[] = '--autoload-file=' . $autoloadFile;
+        }
+
+        return $this->exec($binary, $args);
+    }
+
+    /**
      * @param list<string> $args
      *
      * @return array{0: string, 1: string, 2: int}
